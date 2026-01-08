@@ -2440,86 +2440,87 @@ const Index = () => {
             <DialogTitle className="text-2xl">{selectedListing?.title}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="relative h-64 sm:h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
-              {selectedListing?.photos && selectedListing.photos.length > 0 ? (
-                <>
-                  <img
-                    src={selectedListing.photos[currentPhotoIndex]}
-                    alt={selectedListing.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {selectedListing.photos.length > 1 && (
-                    <>
-                      <button
-                        onClick={() => setCurrentPhotoIndex((prev) => 
-                          prev === 0 ? selectedListing.photos.length - 1 : prev - 1
-                        )}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                      >
-                        <Icon name="ChevronLeft" size={24} />
-                      </button>
-                      <button
-                        onClick={() => setCurrentPhotoIndex((prev) => 
-                          prev === selectedListing.photos.length - 1 ? 0 : prev + 1
-                        )}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                      >
-                        <Icon name="ChevronRight" size={24} />
-                      </button>
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                        {selectedListing.photos.map((_: string, index: number) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentPhotoIndex(index)}
-                            className={`w-2 h-2 rounded-full transition-all ${
-                              index === currentPhotoIndex
-                                ? 'bg-white w-6'
-                                : 'bg-white/50 hover:bg-white/75'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                        {currentPhotoIndex + 1} / {selectedListing.photos.length}
-                      </div>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="text-9xl">
-                  {getRandomEmoji(selectedListing?.id || 0)}
-                </div>
-              )}
-            </div>
+          {selectedListing && (
+            <div className="space-y-4">
+              <div className="relative h-64 sm:h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
+                {selectedListing.photos && selectedListing.photos.length > 0 ? (
+                  <>
+                    <img
+                      src={selectedListing.photos[currentPhotoIndex]}
+                      alt={selectedListing.title}
+                      className="w-full h-full object-cover"
+                    />
+                    {selectedListing.photos.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentPhotoIndex((prev) => 
+                            prev === 0 ? selectedListing.photos.length - 1 : prev - 1
+                          )}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                        >
+                          <Icon name="ChevronLeft" size={24} />
+                        </button>
+                        <button
+                          onClick={() => setCurrentPhotoIndex((prev) => 
+                            prev === selectedListing.photos.length - 1 ? 0 : prev + 1
+                          )}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                        >
+                          <Icon name="ChevronRight" size={24} />
+                        </button>
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                          {selectedListing.photos.map((_: string, index: number) => (
+                            <button
+                              key={index}
+                              onClick={() => setCurrentPhotoIndex(index)}
+                              className={`w-2 h-2 rounded-full transition-all ${
+                                index === currentPhotoIndex
+                                  ? 'bg-white w-6'
+                                  : 'bg-white/50 hover:bg-white/75'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                          {currentPhotoIndex + 1} / {selectedListing.photos.length}
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-9xl">
+                    {getRandomEmoji(selectedListing.id)}
+                  </div>
+                )}
+              </div>
 
             <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
-                {selectedListing?.isVip && (
+                {selectedListing.isVip && (
                   <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
                     <Icon name="Crown" size={14} className="mr-1" />
                     VIP
                   </Badge>
                 )}
-                {selectedListing?.boostedAt && (
+                {selectedListing.boostedAt && (
                   <Badge className="bg-blue-500 text-white">
                     <Icon name="TrendingUp" size={14} className="mr-1" />
                     ТОП
                   </Badge>
                 )}
-                {selectedListing?.verified && (
+                {selectedListing.verified && (
                   <Badge className="bg-green-100 text-green-700">
                     <Icon name="CheckCircle" size={14} className="mr-1" />
                     Верифицирован
                   </Badge>
                 )}
-                {selectedListing?.protectionEnabled && (
+                {selectedListing.protectionEnabled && (
                   <Badge className="bg-orange-100 text-orange-700">
                     <Icon name="Shield" size={14} className="mr-1" />
                     Защищено
                   </Badge>
                 )}
-                {blockedUsers.includes(selectedListing?.ownerId) && (
+                {blockedUsers.includes(selectedListing.ownerId) && (
                   <Badge className="bg-red-100 text-red-700 border-red-300">
                     <Icon name="Ban" size={14} className="mr-1" />
                     Заблокирован
@@ -2532,28 +2533,28 @@ const Index = () => {
               <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Button
-                    variant={userVotes[selectedListing?.id] === 'like' ? 'default' : 'outline'}
+                    variant={userVotes[selectedListing.id] === 'like' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handleVote(selectedListing?.id, 'like')}
-                    disabled={selectedListing?.protectionEnabled}
+                    onClick={() => handleVote(selectedListing.id, 'like')}
+                    disabled={selectedListing.protectionEnabled}
                   >
                     <span className="text-base">👍</span>
-                    <span className="ml-1 font-semibold">{selectedListing?.likes}</span>
+                    <span className="ml-1 font-semibold">{selectedListing.likes}</span>
                   </Button>
                   <Button
-                    variant={userVotes[selectedListing?.id] === 'dislike' ? 'destructive' : 'outline'}
+                    variant={userVotes[selectedListing.id] === 'dislike' ? 'destructive' : 'outline'}
                     size="sm"
-                    onClick={() => handleVote(selectedListing?.id, 'dislike')}
-                    disabled={selectedListing?.protectionEnabled}
+                    onClick={() => handleVote(selectedListing.id, 'dislike')}
+                    disabled={selectedListing.protectionEnabled}
                   >
                     <span className="text-base">👎</span>
-                    <span className="ml-1 font-semibold">{selectedListing?.dislikes}</span>
+                    <span className="ml-1 font-semibold">{selectedListing.dislikes}</span>
                   </Button>
                 </div>
                 <div className="h-8 w-px bg-border" />
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Icon name="MessageCircle" size={16} />
-                  <span className="text-sm font-medium">{selectedListing?.commentsCount} комментариев</span>
+                  <span className="text-sm font-medium">{selectedListing.commentsCount} комментариев</span>
                 </div>
               </div>
               <Button
@@ -2561,13 +2562,13 @@ const Index = () => {
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleFavorite(selectedListing?.id);
+                  toggleFavorite(selectedListing.id);
                 }}
               >
                 <Icon
                   name="Heart"
                   size={20}
-                  className={favorites.includes(selectedListing?.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
+                  className={favorites.includes(selectedListing.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
                 />
               </Button>
             </div>
@@ -2575,9 +2576,9 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <div className="flex items-center text-muted-foreground flex-1">
                 <Icon name="MapPin" size={18} className="mr-2" />
-                {selectedListing?.location}
+                {selectedListing.location}
               </div>
-              {selectedListing?.ownerId !== currentUserId && (
+              {selectedListing.ownerId !== currentUserId && (
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Button
                     onClick={() => {
@@ -2589,33 +2590,33 @@ const Index = () => {
                   >
                     <Icon name="MessageSquare" size={16} className="mr-2" />
                     Написать
-                    {unreadMessages[selectedListing?.id] > 0 && (
+                    {unreadMessages[selectedListing.id] > 0 && (
                       <Badge
                         variant="secondary"
                         className="ml-2 bg-red-500 text-white h-5 w-5 p-0 flex items-center justify-center rounded-full text-xs"
                       >
-                        {unreadMessages[selectedListing?.id]}
+                        {unreadMessages[selectedListing.id]}
                       </Badge>
                     )}
                   </Button>
                   <Button
-                    onClick={() => handleBlockUser(selectedListing?.id)}
-                    variant={blockedUsers.includes(selectedListing?.ownerId) ? 'default' : 'destructive'}
+                    onClick={() => handleBlockUser(selectedListing.id)}
+                    variant={blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
                     className="flex-1 sm:flex-none"
                     size="sm"
                   >
                     <Icon name="Ban" size={16} className="mr-2" />
-                    {blockedUsers.includes(selectedListing?.ownerId) ? 'Разблокировать' : 'Заблокировать'}
+                    {blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
                   </Button>
                 </div>
               )}
             </div>
 
             <p className="text-foreground leading-relaxed">
-              {selectedListing?.description}
+              {selectedListing.description}
             </p>
 
-            {selectedListing?.profile && (
+            {selectedListing.profile && (
               <div className="border rounded-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50">
                 <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                   <Icon name="UserCircle" size={20} className="text-primary" />
@@ -2730,7 +2731,7 @@ const Index = () => {
               </div>
             )}
 
-            {selectedListing?.privatePhotos && selectedListing.privatePhotos.length > 0 && (
+            {selectedListing.privatePhotos && selectedListing.privatePhotos.length > 0 && (
               <div className="border rounded-lg p-4 bg-muted/20">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -2789,9 +2790,9 @@ const Index = () => {
               </div>
             )}
 
-            {selectedListing?.ownerId === currentUserId && (
+            {selectedListing.ownerId === currentUserId && (
               <div className="flex flex-wrap gap-2 pt-2 border-t">
-                {!selectedListing?.isVip && (
+                {!selectedListing.isVip && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -2815,7 +2816,7 @@ const Index = () => {
                   <Icon name="TrendingUp" size={14} className="mr-1" />
                   Поднять (200₽)
                 </Button>
-                {!selectedListing?.protectionEnabled && (
+                {!selectedListing.protectionEnabled && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -2838,7 +2839,7 @@ const Index = () => {
                   onClick={() => setShowCommentDialog(true)} 
                   variant="outline" 
                   size="sm"
-                  disabled={selectedListing?.protectionEnabled}
+                  disabled={selectedListing.protectionEnabled}
                 >
                   <Icon name="MessageSquarePlus" size={16} className="mr-2" />
                   Оставить комментарий
@@ -2846,8 +2847,8 @@ const Index = () => {
               </div>
 
               <div className="space-y-4 max-h-[200px] sm:max-h-[300px] overflow-y-auto mb-6">
-                {comments[selectedListing?.id]?.length > 0 ? (
-                  comments[selectedListing?.id].map((comment: any) => (
+                {comments[selectedListing.id]?.length > 0 ? (
+                  comments[selectedListing.id].map((comment: any) => (
                     <div key={comment.id} className="border-b pb-4 last:border-0">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1">
@@ -2875,7 +2876,7 @@ const Index = () => {
                               className="h-7 px-2 text-destructive hover:text-destructive"
                               onClick={() => {
                                 if (confirm('Удалить комментарий?')) {
-                                  handleDeleteComment(selectedListing?.id, comment.id);
+                                  handleDeleteComment(selectedListing.id, comment.id);
                                 }
                               }}
                             >
@@ -2889,7 +2890,7 @@ const Index = () => {
                   ))
                 ) : (
                   <p className="text-center text-muted-foreground py-4">
-                    {selectedListing?.protectionEnabled 
+                    {selectedListing.protectionEnabled 
                       ? 'Комментарии отключены владельцем'
                       : 'Пока нет комментариев. Будьте первым!'}
                   </p>
@@ -2898,11 +2899,11 @@ const Index = () => {
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-t pt-4 gap-3">
                 <span className="text-xl sm:text-2xl font-bold text-primary">
-                  {selectedListing?.price}
+                  {selectedListing.price}
                 </span>
               </div>
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 
