@@ -910,7 +910,9 @@ const Index = () => {
     });
   };
 
-  const simulateIncomingMessage = (listingId: number) => {
+  const simulateIncomingMessage = (listingId: number | undefined) => {
+    if (!listingId) return;
+    
     setTimeout(() => {
       const incomingMsg = {
         text: 'Привет! Спасибо за интерес. Доступен для встречи.',
