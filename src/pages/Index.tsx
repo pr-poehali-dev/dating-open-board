@@ -210,6 +210,18 @@ const Index = () => {
   const [grantedAccess, setGrantedAccess] = useState<{[key: number]: number[]}>({});
   const [showPrivatePhotos, setShowPrivatePhotos] = useState(false);
   const [showAccessRequestDialog, setShowAccessRequestDialog] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    ageFrom: '',
+    ageTo: '',
+    weightFrom: '',
+    weightTo: '',
+    heightFrom: '',
+    heightTo: '',
+    bodyType: '',
+    orientation: '',
+    role: '',
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -830,6 +842,28 @@ const Index = () => {
     });
   };
 
+  const hasActiveFilters = () => {
+    return Object.values(filters).some(value => value !== '');
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      ageFrom: '',
+      ageTo: '',
+      weightFrom: '',
+      weightTo: '',
+      heightFrom: '',
+      heightTo: '',
+      bodyType: '',
+      orientation: '',
+      role: '',
+    });
+    toast({
+      title: 'Фильтры сброшены',
+      description: 'Все фильтры очищены',
+    });
+  };
+
   const filteredListings = listings
     .filter((listing) => {
       const matchesCategory = !selectedCategory || listing.category === selectedCategory;
@@ -838,7 +872,56 @@ const Index = () => {
         listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         listing.location.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesFavorites = !showFavorites || favorites.includes(listing.id);
-      return matchesCategory && matchesSearch && matchesFavorites;
+      
+      // Фильтры по параметрам профиля
+      let matchesFilters = true;
+      if (hasActiveFilters() && listing.profile) {
+        const profile = listing.profile;
+        
+        // Возраст
+        if (filters.ageFrom && profile.age) {
+          if (parseInt(profile.age) < parseInt(filters.ageFrom)) matchesFilters = false;
+        }
+        if (filters.ageTo && profile.age) {
+          if (parseInt(profile.age) > parseInt(filters.ageTo)) matchesFilters = false;
+        }
+        
+        // Вес
+        if (filters.weightFrom && profile.weight) {
+          if (parseInt(profile.weight) < parseInt(filters.weightFrom)) matchesFilters = false;
+        }
+        if (filters.weightTo && profile.weight) {
+          if (parseInt(profile.weight) > parseInt(filters.weightTo)) matchesFilters = false;
+        }
+        
+        // Рост
+        if (filters.heightFrom && profile.height) {
+          if (parseInt(profile.height) < parseInt(filters.heightFrom)) matchesFilters = false;
+        }
+        if (filters.heightTo && profile.height) {
+          if (parseInt(profile.height) > parseInt(filters.heightTo)) matchesFilters = false;
+        }
+        
+        // Форма тела
+        if (filters.bodyType && profile.bodyType) {
+          if (profile.bodyType !== filters.bodyType) matchesFilters = false;
+        }
+        
+        // Ориентация
+        if (filters.orientation && profile.orientation) {
+          if (profile.orientation !== filters.orientation) matchesFilters = false;
+        }
+        
+        // Роль
+        if (filters.role && profile.role) {
+          if (profile.role !== filters.role) matchesFilters = false;
+        }
+      } else if (hasActiveFilters() && !listing.profile) {
+        // Если фильтры активны, но у объявления нет профиля - не показываем
+        matchesFilters = false;
+      }
+      
+      return matchesCategory && matchesSearch && matchesFavorites && matchesFilters;
     })
     .sort((a, b) => {
       if (a.isVip && !b.isVip) return -1;
@@ -860,6 +943,23 @@ const Index = () => {
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h1 className="text-xl sm:text-2xl font-bold text-primary">МойДосуг</h1>
             <div className="flex items-center gap-1 sm:gap-2">
+              <Button
+                onClick={() => setShowFilters(!showFilters)}
+                variant={showFilters ? 'default' : 'outline'}
+                size="sm"
+                className="relative h-8 sm:h-9 px-2 sm:px-3"
+              >
+                <Icon name="Filter" size={14} className="sm:mr-2" />
+                <span className="hidden sm:inline">Фильтры</span>
+                {hasActiveFilters() && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 sm:ml-2 bg-primary text-white h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center rounded-full text-[10px] sm:text-xs"
+                  >
+                    {Object.values(filters).filter(v => v !== '').length}
+                  </Badge>
+                )}
+              </Button>
               <Button
                 onClick={() => setShowFavorites(!showFavorites)}
                 variant={showFavorites ? 'default' : 'outline'}
@@ -1230,6 +1330,157 @@ const Index = () => {
           </div>
         ) : (
           <>
+        {showFilters && (
+          <Card className="mb-6 p-4 sm:p-6 animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Icon name="Filter" size={20} className="text-primary" />
+                Фильтры по параметрам
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters()}
+              >
+                <Icon name="X" size={14} className="mr-1" />
+                Сбросить
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Возраст</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="От"
+                    value={filters.ageFrom}
+                    onChange={(e) => setFilters({ ...filters, ageFrom: e.target.value })}
+                    className="h-9"
+                  />
+                  <span className="text-muted-foreground">—</span>
+                  <Input
+                    type="number"
+                    placeholder="До"
+                    value={filters.ageTo}
+                    onChange={(e) => setFilters({ ...filters, ageTo: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Вес (кг)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="От"
+                    value={filters.weightFrom}
+                    onChange={(e) => setFilters({ ...filters, weightFrom: e.target.value })}
+                    className="h-9"
+                  />
+                  <span className="text-muted-foreground">—</span>
+                  <Input
+                    type="number"
+                    placeholder="До"
+                    value={filters.weightTo}
+                    onChange={(e) => setFilters({ ...filters, weightTo: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Рост (см)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="От"
+                    value={filters.heightFrom}
+                    onChange={(e) => setFilters({ ...filters, heightFrom: e.target.value })}
+                    className="h-9"
+                  />
+                  <span className="text-muted-foreground">—</span>
+                  <Input
+                    type="number"
+                    placeholder="До"
+                    value={filters.heightTo}
+                    onChange={(e) => setFilters({ ...filters, heightTo: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Форма тела</Label>
+                <Select
+                  value={filters.bodyType}
+                  onValueChange={(value) => setFilters({ ...filters, bodyType: value })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Любая" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=" ">Любая</SelectItem>
+                    <SelectItem value="Стройная">Стройная</SelectItem>
+                    <SelectItem value="Спортивная">Спортивная</SelectItem>
+                    <SelectItem value="Полная">Полная</SelectItem>
+                    <SelectItem value="Худая">Худая</SelectItem>
+                    <SelectItem value="Атлетическая">Атлетическая</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Ориентация</Label>
+                <Select
+                  value={filters.orientation}
+                  onValueChange={(value) => setFilters({ ...filters, orientation: value })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Любая" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=" ">Любая</SelectItem>
+                    <SelectItem value="Гетеро">Гетеро</SelectItem>
+                    <SelectItem value="Би">Би</SelectItem>
+                    <SelectItem value="Гомо">Гомо</SelectItem>
+                    <SelectItem value="Лесби">Лесби</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Роль</Label>
+                <Select
+                  value={filters.role}
+                  onValueChange={(value) => setFilters({ ...filters, role: value })}
+                >
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Любая" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value=" ">Любая</SelectItem>
+                    <SelectItem value="Актив">Актив</SelectItem>
+                    <SelectItem value="Пассив">Пассив</SelectItem>
+                    <SelectItem value="Универсал">Универсал</SelectItem>
+                    <SelectItem value="Не указано">Не указано</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {hasActiveFilters() && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Активно фильтров: <span className="font-semibold text-primary">{Object.values(filters).filter(v => v !== '').length}</span>
+                </p>
+              </div>
+            )}
+          </Card>
+        )}
+
         <div className="mb-6 sm:mb-8 animate-fade-in">
           <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Категории</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
