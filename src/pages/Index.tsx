@@ -20,8 +20,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import AppInfo from '@/components/AppInfo';
-import NotificationBadge from '@/components/NotificationBadge';
 
 const categories = [
   { id: 'sex', name: 'Секс знакомства', icon: 'Heart', color: 'bg-pink-100 text-pink-700' },
@@ -229,18 +227,13 @@ const Index = () => {
     bodyType: '',
     orientation: '',
     role: '',
-    priceFrom: '',
-    priceTo: '',
   });
   const [showMessagesDialog, setShowMessagesDialog] = useState(false);
   const [messageRecipient, setMessageRecipient] = useState<any>(null);
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<{[key: number]: any[]}>({});
-  const [unreadMessages, setUnreadMessages] = useState<{[key: number]: number}>({});
   const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
   const [showBlockedSection, setShowBlockedSection] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -250,20 +243,6 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
   }, [searchHistory]);
-
-  const addNotification = (message: string, type: 'message' | 'access' | 'favorite' | 'comment') => {
-    const notif = {
-      id: Date.now(),
-      message,
-      type,
-      timestamp: Date.now(),
-    };
-    setNotifications(prev => [...prev, notif]);
-  };
-
-  const dismissNotification = (id: number) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
 
   const handleSearchSubmit = (query: string) => {
     if (query.trim() && !searchHistory.includes(query.trim())) {
@@ -613,20 +592,13 @@ const Index = () => {
           ? 'Объявление сохранено в ваших избранных'
           : 'Объявление удалено из избранных',
       });
-
-      if (isAdded) {
-        const listing = listings.find(l => l.id === listingId);
-        if (listing) {
-          addNotification(`${listing.title} добавлено в избранное`, 'favorite');
-        }
-      }
       
       return newFavorites;
     });
   };
 
   const handleRequestPhotoAccess = () => {
-    if (!selectedListing || !selectedListing.ownerId || selectedListing.ownerId === currentUserId) return;
+    if (!selectedListing || selectedListing.ownerId === currentUserId) return;
 
     const listingId = selectedListing.id;
     const currentRequests = photoAccessRequests[listingId] || [];
@@ -897,8 +869,6 @@ const Index = () => {
       bodyType: '',
       orientation: '',
       role: '',
-      priceFrom: '',
-      priceTo: '',
     });
     toast({
       title: 'Фильтры сброшены',
@@ -926,54 +896,15 @@ const Index = () => {
     }
   };
 
-  const getTotalUnreadMessages = () => {
-    return Object.values(unreadMessages).reduce((sum, count) => sum + count, 0);
-  };
-
-  const markMessagesAsRead = (listingId: number) => {
-    setUnreadMessages(prev => {
-      const newUnread = { ...prev };
-      delete newUnread[listingId];
-      return newUnread;
-    });
-  };
-
-  const simulateIncomingMessage = (listingId: number | undefined) => {
-    if (!listingId) return;
-    
-    setTimeout(() => {
-      const incomingMsg = {
-        text: 'Привет! Спасибо за интерес. Доступен для встречи.',
-        fromMe: false,
-        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages(prev => ({
-        ...prev,
-        [listingId]: [...(prev[listingId] || []), incomingMsg],
-      }));
-      
-      if (!showMessagesDialog || messageRecipient?.id !== listingId) {
-        setUnreadMessages(prev => ({
-          ...prev,
-          [listingId]: (prev[listingId] || 0) + 1,
-        }));
-        toast({
-          title: 'Новое сообщение',
-          description: 'Вам пришло новое сообщение',
-        });
-      }
-    }, 3000 + Math.random() * 3000);
-  };
-
   const filteredListings = listings
     .filter((listing) => {
       // Скрываем заблокированных пользователей из основного списка
-      if (!showBlockedSection && listing.ownerId && blockedUsers.includes(listing.ownerId) && listing.ownerId !== currentUserId) {
+      if (!showBlockedSection && blockedUsers.includes(listing.ownerId) && listing.ownerId !== currentUserId) {
         return false;
       }
       
       // Показываем только заблокированных в секции блокировки
-      if (showBlockedSection && listing.ownerId && !blockedUsers.includes(listing.ownerId)) {
+      if (showBlockedSection && !blockedUsers.includes(listing.ownerId)) {
         return false;
       }
 
@@ -1027,19 +958,7 @@ const Index = () => {
         if (filters.role && profile.role) {
           if (profile.role !== filters.role) matchesFilters = false;
         }
-      }
-
-      // Фильтр по цене (работает всегда, не только для профилей)
-      if (filters.priceFrom || filters.priceTo) {
-        const priceMatch = listing.price.match(/\d+/);
-        if (priceMatch) {
-          const price = parseInt(priceMatch[0]);
-          if (filters.priceFrom && price < parseInt(filters.priceFrom)) matchesFilters = false;
-          if (filters.priceTo && price > parseInt(filters.priceTo)) matchesFilters = false;
-        }
-      }
-
-      if (hasActiveFilters() && !listing.profile && (filters.ageFrom || filters.ageTo || filters.weightFrom || filters.weightTo || filters.heightFrom || filters.heightTo || filters.bodyType || filters.orientation || filters.role)) {
+      } else if (hasActiveFilters() && !listing.profile) {
         // Если фильтры активны, но у объявления нет профиля - не показываем
         matchesFilters = false;
       }
@@ -1061,29 +980,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <NotificationBadge notifications={notifications} onDismiss={dismissNotification} />
-      
       <header className="border-b sticky top-0 bg-white/80 backdrop-blur-md z-10">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h1 className="text-xl sm:text-2xl font-bold text-primary">МойДосуг</h1>
-            
-            {/* Бургер-меню для мобильных */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="sm:hidden relative"
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-            >
-              <Icon name={showMobileMenu ? "X" : "Menu"} size={24} />
-              {(blockedUsers.length > 0 || favorites.length > 0 || getTotalUnreadMessages() > 0 || getPendingRequests() > 0) && !showMobileMenu && (
-                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
-              )}
-            </Button>
-
-            {/* Десктопное меню */}
-            <div className="hidden sm:flex items-center gap-1 sm:gap-2">
-              <AppInfo />
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 onClick={() => {
                   setShowBlockedSection(!showBlockedSection);
@@ -1141,22 +1042,6 @@ const Index = () => {
                   </Badge>
                 )}
               </Button>
-              {getTotalUnreadMessages() > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="relative h-8 sm:h-9 px-2 sm:px-3"
-                >
-                  <Icon name="MessageSquare" size={14} className="sm:mr-2" />
-                  <span className="hidden sm:inline">Сообщения</span>
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 sm:ml-2 bg-red-500 text-white h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center rounded-full text-[10px] sm:text-xs animate-pulse"
-                  >
-                    {getTotalUnreadMessages()}
-                  </Badge>
-                </Button>
-              )}
               <Button onClick={() => setShowCreateDialog(true)} size="sm" className="h-8 sm:h-9 px-2 sm:px-3">
                 <Icon name="Plus" size={14} className="sm:mr-2" />
                 <span className="hidden sm:inline">Разместить</span>
@@ -1272,125 +1157,6 @@ const Index = () => {
           </div>
         </div>
       </header>
-
-      {/* Мобильное меню */}
-      {showMobileMenu && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 sm:hidden" 
-            onClick={() => setShowMobileMenu(false)}
-          />
-          <div className="fixed top-[72px] right-0 left-0 bg-white border-b shadow-lg z-50 sm:hidden animate-slide-in">
-            <div className="container mx-auto px-4 py-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => {
-                    setShowBlockedSection(!showBlockedSection);
-                    setShowFavorites(false);
-                    setShowProfile(false);
-                    setShowFilters(false);
-                    setSelectedCategory(null);
-                    setShowMobileMenu(false);
-                  }}
-                  variant={showBlockedSection ? 'default' : 'outline'}
-                  size="sm"
-                  className="relative justify-start"
-                >
-                  <Icon name="Ban" size={16} className="mr-2" />
-                  Чёрный список
-                  {blockedUsers.length > 0 && (
-                    <Badge className="ml-auto bg-red-500 text-white">
-                      {blockedUsers.length}
-                    </Badge>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={() => {
-                    setShowFilters(!showFilters);
-                    setShowMobileMenu(false);
-                  }}
-                  variant={showFilters ? 'default' : 'outline'}
-                  size="sm"
-                  className="relative justify-start"
-                >
-                  <Icon name="Filter" size={16} className="mr-2" />
-                  Фильтры
-                  {hasActiveFilters() && (
-                    <Badge className="ml-auto bg-primary text-white">
-                      {Object.values(filters).filter(v => v !== '').length}
-                    </Badge>
-                  )}
-                </Button>
-
-                <Button
-                  onClick={() => {
-                    setShowFavorites(!showFavorites);
-                    setShowMobileMenu(false);
-                  }}
-                  variant={showFavorites ? 'default' : 'outline'}
-                  size="sm"
-                  className="relative justify-start"
-                >
-                  <Icon name="Heart" size={16} className="mr-2" />
-                  Избранное
-                  {favorites.length > 0 && (
-                    <Badge className="ml-auto bg-red-500 text-white">
-                      {favorites.length}
-                    </Badge>
-                  )}
-                </Button>
-
-                {getTotalUnreadMessages() > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="relative justify-start"
-                    onClick={() => setShowMobileMenu(false)}
-                  >
-                    <Icon name="MessageSquare" size={16} className="mr-2" />
-                    Сообщения
-                    <Badge className="ml-auto bg-red-500 text-white animate-pulse">
-                      {getTotalUnreadMessages()}
-                    </Badge>
-                  </Button>
-                )}
-
-                <Button 
-                  onClick={() => {
-                    setShowCreateDialog(true);
-                    setShowMobileMenu(false);
-                  }} 
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Icon name="Plus" size={16} className="mr-2" />
-                  Разместить
-                </Button>
-
-                <Button
-                  variant={showProfile ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => {
-                    setShowProfile(!showProfile);
-                    setShowMobileMenu(false);
-                  }}
-                  className="relative justify-start"
-                >
-                  <Icon name="User" size={16} className="mr-2" />
-                  Кабинет
-                  {(myListings.length > 0 || getPendingRequests() > 0) && (
-                    <Badge className="ml-auto bg-primary text-white">
-                      {myListings.length}
-                      {getPendingRequests() > 0 && ` (${getPendingRequests()})`}
-                    </Badge>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
 
       <main className="container mx-auto px-4 py-8">
         {showProfile ? (
@@ -1767,27 +1533,6 @@ const Index = () => {
                     <SelectItem value="Не указано">Не указано</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground mb-2 block">Цена (₽)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    placeholder="От"
-                    value={filters.priceFrom}
-                    onChange={(e) => setFilters({ ...filters, priceFrom: e.target.value })}
-                    className="h-9"
-                  />
-                  <span className="text-muted-foreground">—</span>
-                  <Input
-                    type="number"
-                    placeholder="До"
-                    value={filters.priceTo}
-                    onChange={(e) => setFilters({ ...filters, priceTo: e.target.value })}
-                    className="h-9"
-                  />
-                </div>
               </div>
             </div>
 
@@ -2637,87 +2382,86 @@ const Index = () => {
             <DialogTitle className="text-2xl">{selectedListing?.title}</DialogTitle>
           </DialogHeader>
 
-          {selectedListing && (
-            <div className="space-y-4">
-              <div className="relative h-64 sm:h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
-                {selectedListing.photos && selectedListing.photos.length > 0 ? (
-                  <>
-                    <img
-                      src={selectedListing.photos[currentPhotoIndex]}
-                      alt={selectedListing.title}
-                      className="w-full h-full object-cover"
-                    />
-                    {selectedListing.photos.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setCurrentPhotoIndex((prev) => 
-                            prev === 0 ? selectedListing.photos.length - 1 : prev - 1
-                          )}
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                        >
-                          <Icon name="ChevronLeft" size={24} />
-                        </button>
-                        <button
-                          onClick={() => setCurrentPhotoIndex((prev) => 
-                            prev === selectedListing.photos.length - 1 ? 0 : prev + 1
-                          )}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                        >
-                          <Icon name="ChevronRight" size={24} />
-                        </button>
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                          {selectedListing.photos.map((_: string, index: number) => (
-                            <button
-                              key={index}
-                              onClick={() => setCurrentPhotoIndex(index)}
-                              className={`w-2 h-2 rounded-full transition-all ${
-                                index === currentPhotoIndex
-                                  ? 'bg-white w-6'
-                                  : 'bg-white/50 hover:bg-white/75'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                        <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
-                          {currentPhotoIndex + 1} / {selectedListing.photos.length}
-                        </div>
-                      </>
-                    )}
-                  </>
-                ) : (
-                  <div className="text-9xl">
-                    {getRandomEmoji(selectedListing.id)}
-                  </div>
-                )}
-              </div>
+          <div className="space-y-4">
+            <div className="relative h-64 sm:h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
+              {selectedListing?.photos && selectedListing.photos.length > 0 ? (
+                <>
+                  <img
+                    src={selectedListing.photos[currentPhotoIndex]}
+                    alt={selectedListing.title}
+                    className="w-full h-full object-cover"
+                  />
+                  {selectedListing.photos.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setCurrentPhotoIndex((prev) => 
+                          prev === 0 ? selectedListing.photos.length - 1 : prev - 1
+                        )}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                      >
+                        <Icon name="ChevronLeft" size={24} />
+                      </button>
+                      <button
+                        onClick={() => setCurrentPhotoIndex((prev) => 
+                          prev === selectedListing.photos.length - 1 ? 0 : prev + 1
+                        )}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                      >
+                        <Icon name="ChevronRight" size={24} />
+                      </button>
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                        {selectedListing.photos.map((_: string, index: number) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentPhotoIndex(index)}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              index === currentPhotoIndex
+                                ? 'bg-white w-6'
+                                : 'bg-white/50 hover:bg-white/75'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                        {currentPhotoIndex + 1} / {selectedListing.photos.length}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="text-9xl">
+                  {getRandomEmoji(selectedListing?.id || 0)}
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
-                {selectedListing.isVip && (
+                {selectedListing?.isVip && (
                   <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
                     <Icon name="Crown" size={14} className="mr-1" />
                     VIP
                   </Badge>
                 )}
-                {selectedListing.boostedAt && (
+                {selectedListing?.boostedAt && (
                   <Badge className="bg-blue-500 text-white">
                     <Icon name="TrendingUp" size={14} className="mr-1" />
                     ТОП
                   </Badge>
                 )}
-                {selectedListing.verified && (
+                {selectedListing?.verified && (
                   <Badge className="bg-green-100 text-green-700">
                     <Icon name="CheckCircle" size={14} className="mr-1" />
                     Верифицирован
                   </Badge>
                 )}
-                {selectedListing.protectionEnabled && (
+                {selectedListing?.protectionEnabled && (
                   <Badge className="bg-orange-100 text-orange-700">
                     <Icon name="Shield" size={14} className="mr-1" />
                     Защищено
                   </Badge>
                 )}
-                {selectedListing.ownerId && blockedUsers.includes(selectedListing.ownerId) && (
+                {blockedUsers.includes(selectedListing?.ownerId) && (
                   <Badge className="bg-red-100 text-red-700 border-red-300">
                     <Icon name="Ban" size={14} className="mr-1" />
                     Заблокирован
@@ -2730,28 +2474,28 @@ const Index = () => {
               <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Button
-                    variant={userVotes[selectedListing.id] === 'like' ? 'default' : 'outline'}
+                    variant={userVotes[selectedListing?.id] === 'like' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handleVote(selectedListing.id, 'like')}
-                    disabled={selectedListing.protectionEnabled}
+                    onClick={() => handleVote(selectedListing?.id, 'like')}
+                    disabled={selectedListing?.protectionEnabled}
                   >
                     <span className="text-base">👍</span>
-                    <span className="ml-1 font-semibold">{selectedListing.likes}</span>
+                    <span className="ml-1 font-semibold">{selectedListing?.likes}</span>
                   </Button>
                   <Button
-                    variant={userVotes[selectedListing.id] === 'dislike' ? 'destructive' : 'outline'}
+                    variant={userVotes[selectedListing?.id] === 'dislike' ? 'destructive' : 'outline'}
                     size="sm"
-                    onClick={() => handleVote(selectedListing.id, 'dislike')}
-                    disabled={selectedListing.protectionEnabled}
+                    onClick={() => handleVote(selectedListing?.id, 'dislike')}
+                    disabled={selectedListing?.protectionEnabled}
                   >
                     <span className="text-base">👎</span>
-                    <span className="ml-1 font-semibold">{selectedListing.dislikes}</span>
+                    <span className="ml-1 font-semibold">{selectedListing?.dislikes}</span>
                   </Button>
                 </div>
                 <div className="h-8 w-px bg-border" />
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Icon name="MessageCircle" size={16} />
-                  <span className="text-sm font-medium">{selectedListing.commentsCount} комментариев</span>
+                  <span className="text-sm font-medium">{selectedListing?.commentsCount} комментариев</span>
                 </div>
               </div>
               <Button
@@ -2759,13 +2503,13 @@ const Index = () => {
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleFavorite(selectedListing.id);
+                  toggleFavorite(selectedListing?.id);
                 }}
               >
                 <Icon
                   name="Heart"
                   size={20}
-                  className={favorites.includes(selectedListing.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
+                  className={favorites.includes(selectedListing?.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
                 />
               </Button>
             </div>
@@ -2773,47 +2517,39 @@ const Index = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
               <div className="flex items-center text-muted-foreground flex-1">
                 <Icon name="MapPin" size={18} className="mr-2" />
-                {selectedListing.location}
+                {selectedListing?.location}
               </div>
-              {selectedListing.ownerId && selectedListing.ownerId !== currentUserId && (
+              {selectedListing?.ownerId !== currentUserId && (
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Button
                     onClick={() => {
                       setMessageRecipient(selectedListing);
                       setShowMessagesDialog(true);
                     }}
-                    className="flex-1 sm:flex-none relative"
+                    className="flex-1 sm:flex-none"
                     size="sm"
                   >
                     <Icon name="MessageSquare" size={16} className="mr-2" />
                     Написать
-                    {unreadMessages[selectedListing.id] > 0 && (
-                      <Badge
-                        variant="secondary"
-                        className="ml-2 bg-red-500 text-white h-5 w-5 p-0 flex items-center justify-center rounded-full text-xs"
-                      >
-                        {unreadMessages[selectedListing.id]}
-                      </Badge>
-                    )}
                   </Button>
                   <Button
                     onClick={() => handleBlockUser(selectedListing.id)}
-                    variant={selectedListing.ownerId && blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
+                    variant={blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
                     className="flex-1 sm:flex-none"
                     size="sm"
                   >
                     <Icon name="Ban" size={16} className="mr-2" />
-                    {selectedListing.ownerId && blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
+                    {blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
                   </Button>
                 </div>
               )}
             </div>
 
             <p className="text-foreground leading-relaxed">
-              {selectedListing.description}
+              {selectedListing?.description}
             </p>
 
-            {selectedListing.profile && (
+            {selectedListing?.profile && (
               <div className="border rounded-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50">
                 <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
                   <Icon name="UserCircle" size={20} className="text-primary" />
@@ -2928,7 +2664,7 @@ const Index = () => {
               </div>
             )}
 
-            {selectedListing.privatePhotos && selectedListing.privatePhotos.length > 0 && (
+            {selectedListing?.privatePhotos && selectedListing.privatePhotos.length > 0 && (
               <div className="border rounded-lg p-4 bg-muted/20">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
@@ -2987,9 +2723,9 @@ const Index = () => {
               </div>
             )}
 
-            {selectedListing.ownerId && selectedListing.ownerId === currentUserId && (
+            {selectedListing?.ownerId === currentUserId && (
               <div className="flex flex-wrap gap-2 pt-2 border-t">
-                {!selectedListing.isVip && (
+                {!selectedListing?.isVip && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -3013,7 +2749,7 @@ const Index = () => {
                   <Icon name="TrendingUp" size={14} className="mr-1" />
                   Поднять (200₽)
                 </Button>
-                {!selectedListing.protectionEnabled && (
+                {!selectedListing?.protectionEnabled && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -3036,7 +2772,7 @@ const Index = () => {
                   onClick={() => setShowCommentDialog(true)} 
                   variant="outline" 
                   size="sm"
-                  disabled={selectedListing.protectionEnabled}
+                  disabled={selectedListing?.protectionEnabled}
                 >
                   <Icon name="MessageSquarePlus" size={16} className="mr-2" />
                   Оставить комментарий
@@ -3044,8 +2780,8 @@ const Index = () => {
               </div>
 
               <div className="space-y-4 max-h-[200px] sm:max-h-[300px] overflow-y-auto mb-6">
-                {comments[selectedListing.id]?.length > 0 ? (
-                  comments[selectedListing.id].map((comment: any) => (
+                {comments[selectedListing?.id]?.length > 0 ? (
+                  comments[selectedListing?.id].map((comment: any) => (
                     <div key={comment.id} className="border-b pb-4 last:border-0">
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1">
@@ -3073,7 +2809,7 @@ const Index = () => {
                               className="h-7 px-2 text-destructive hover:text-destructive"
                               onClick={() => {
                                 if (confirm('Удалить комментарий?')) {
-                                  handleDeleteComment(selectedListing.id, comment.id);
+                                  handleDeleteComment(selectedListing?.id, comment.id);
                                 }
                               }}
                             >
@@ -3087,7 +2823,7 @@ const Index = () => {
                   ))
                 ) : (
                   <p className="text-center text-muted-foreground py-4">
-                    {selectedListing.protectionEnabled 
+                    {selectedListing?.protectionEnabled 
                       ? 'Комментарии отключены владельцем'
                       : 'Пока нет комментариев. Будьте первым!'}
                   </p>
@@ -3096,10 +2832,11 @@ const Index = () => {
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-t pt-4 gap-3">
                 <span className="text-xl sm:text-2xl font-bold text-primary">
-                  {selectedListing.price}
+                  {selectedListing?.price}
                 </span>
               </div>
             </div>
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -3369,12 +3106,7 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showMessagesDialog} onOpenChange={(open) => {
-        if (open && messageRecipient) {
-          markMessagesAsRead(messageRecipient.id);
-        }
-        setShowMessagesDialog(open);
-      }}>
+      <Dialog open={showMessagesDialog} onOpenChange={setShowMessagesDialog}>
         <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl flex items-center gap-2">
@@ -3436,7 +3168,6 @@ const Index = () => {
                         [messageRecipient?.id]: [...(messages[messageRecipient?.id] || []), msg],
                       });
                       setNewMessage('');
-                      simulateIncomingMessage(messageRecipient?.id);
                       toast({
                         title: 'Отправлено',
                         description: 'Ваше сообщение доставлено',
@@ -3459,7 +3190,6 @@ const Index = () => {
                       [messageRecipient?.id]: [...(messages[messageRecipient?.id] || []), msg],
                     });
                     setNewMessage('');
-                    simulateIncomingMessage(messageRecipient?.id);
                     toast({
                       title: 'Отправлено',
                       description: 'Ваше сообщение доставлено',
