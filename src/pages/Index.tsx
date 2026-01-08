@@ -623,6 +623,41 @@ const Index = () => {
     return total;
   };
 
+  const getMutualExchangesCount = () => {
+    let total = 0;
+    myListings.forEach((listing) => {
+      const accessGranted = grantedAccess[listing.id] || [];
+      accessGranted.forEach((userId) => {
+        // Проверяем, есть ли у этого пользователя объявления с приватными фото, к которым мы имеем доступ
+        const userListings = listings.filter((l) => l.ownerId === userId && l.privatePhotos.length > 0);
+        userListings.forEach((userListing) => {
+          if ((grantedAccess[userListing.id] || []).includes(currentUserId)) {
+            total++;
+          }
+        });
+      });
+    });
+    return total;
+  };
+
+  const getAccessGrantedByMe = () => {
+    let total = 0;
+    myListings.forEach((listing) => {
+      total += (grantedAccess[listing.id] || []).length;
+    });
+    return total;
+  };
+
+  const getAccessGrantedToMe = () => {
+    let total = 0;
+    listings.forEach((listing) => {
+      if (listing.ownerId !== currentUserId && (grantedAccess[listing.id] || []).includes(currentUserId)) {
+        total++;
+      }
+    });
+    return total;
+  };
+
   const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>, isEditing: boolean = false, isPrivate: boolean = false) => {
     const files = event.target.files;
     if (!files) return;
@@ -939,6 +974,37 @@ const Index = () => {
               </Card>
             ) : (
               <div className="space-y-4">
+                {(getAccessGrantedByMe() > 0 || getAccessGrantedToMe() > 0 || getMutualExchangesCount() > 0) && (
+                  <div className="grid grid-cols-3 gap-4">
+                    <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <Icon name="Unlock" size={20} className="text-green-600" />
+                        <Badge className="bg-green-600 text-white">{getAccessGrantedToMe()}</Badge>
+                      </div>
+                      <p className="text-sm font-medium text-green-900">Доступ получен</p>
+                      <p className="text-xs text-green-700 mt-1">К приватным фото других</p>
+                    </Card>
+
+                    <Card className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <Icon name="Share2" size={20} className="text-blue-600" />
+                        <Badge className="bg-blue-600 text-white">{getAccessGrantedByMe()}</Badge>
+                      </div>
+                      <p className="text-sm font-medium text-blue-900">Доступ выдан</p>
+                      <p className="text-xs text-blue-700 mt-1">К моим фото</p>
+                    </Card>
+
+                    <Card className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <Icon name="Repeat2" size={20} className="text-purple-600" />
+                        <Badge className="bg-purple-600 text-white">{getMutualExchangesCount()}</Badge>
+                      </div>
+                      <p className="text-sm font-medium text-purple-900">Взаимный обмен</p>
+                      <p className="text-xs text-purple-700 mt-1">Обоюдный доступ</p>
+                    </Card>
+                  </div>
+                )}
+
                 {getPendingRequests() > 0 && (
                   <Card className="p-6 bg-blue-50 border-blue-200">
                     <div className="flex items-center justify-between mb-4">
