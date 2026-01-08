@@ -55,6 +55,12 @@ const mockComments: any = {
   ],
 };
 
+const profileEmojis = ['👤', '👨', '👩', '🧑', '👱‍♀️', '👱‍♂️', '🧔', '👨‍🦰', '👩‍🦰', '👨‍🦱', '👩‍🦱', '👨‍🦳', '👩‍🦳', '🧑‍🦰', '🧑‍🦱'];
+
+const getRandomEmoji = (id: number) => {
+  return profileEmojis[id % profileEmojis.length];
+};
+
 const mockListings = [
   {
     id: 1,
@@ -222,6 +228,10 @@ const Index = () => {
     orientation: '',
     role: '',
   });
+  const [showMessagesDialog, setShowMessagesDialog] = useState(false);
+  const [messageRecipient, setMessageRecipient] = useState<any>(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [messages, setMessages] = useState<{[key: number]: any[]}>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -1608,11 +1618,9 @@ const Index = () => {
                       )}
                     </div>
                   ) : (
-                    <Icon
-                      name={getCategoryIcon(listing.category) as any}
-                      size={40}
-                      className="text-primary/40"
-                    />
+                    <div className="text-6xl sm:text-7xl">
+                      {getRandomEmoji(listing.id)}
+                    </div>
                   )}
                 </div>
 
@@ -2334,11 +2342,9 @@ const Index = () => {
                   )}
                 </>
               ) : (
-                <Icon
-                  name={getCategoryIcon(selectedListing?.category) as any}
-                  size={96}
-                  className="text-primary/40"
-                />
+                <div className="text-9xl">
+                  {getRandomEmoji(selectedListing?.id || 0)}
+                </div>
               )}
             </div>
 
@@ -2415,9 +2421,24 @@ const Index = () => {
               </Button>
             </div>
 
-            <div className="flex items-center text-muted-foreground">
-              <Icon name="MapPin" size={18} className="mr-2" />
-              {selectedListing?.location}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+              <div className="flex items-center text-muted-foreground flex-1">
+                <Icon name="MapPin" size={18} className="mr-2" />
+                {selectedListing?.location}
+              </div>
+              {selectedListing?.ownerId !== currentUserId && (
+                <Button
+                  onClick={() => {
+                    setMessageRecipient(selectedListing);
+                    setShowMessagesDialog(true);
+                  }}
+                  className="w-full sm:w-auto"
+                  size="sm"
+                >
+                  <Icon name="MessageSquare" size={16} className="mr-2" />
+                  Написать
+                </Button>
+              )}
             </div>
 
             <p className="text-foreground leading-relaxed">
@@ -2709,10 +2730,6 @@ const Index = () => {
                 <span className="text-xl sm:text-2xl font-bold text-primary">
                   {selectedListing?.price}
                 </span>
-                <Button size="lg">
-                  <Icon name="MessageCircle" size={18} className="mr-2" />
-                  Написать
-                </Button>
               </div>
             </div>
           </div>
@@ -2981,6 +2998,107 @@ const Index = () => {
                 )}
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showMessagesDialog} onOpenChange={setShowMessagesDialog}>
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-xl sm:text-2xl flex items-center gap-2">
+              <Icon name="MessageSquare" size={20} className="text-primary" />
+              Сообщения с {messageRecipient?.title}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto space-y-3 py-4 px-1 min-h-[300px] max-h-[50vh]">
+            {messages[messageRecipient?.id]?.length > 0 ? (
+              messages[messageRecipient.id].map((msg: any, index: number) => (
+                <div
+                  key={index}
+                  className={`flex ${msg.fromMe ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[75%] sm:max-w-[65%] rounded-lg px-3 sm:px-4 py-2 sm:py-3 ${
+                      msg.fromMe
+                        ? 'bg-primary text-white'
+                        : 'bg-muted text-foreground'
+                    }`}
+                  >
+                    <p className="text-sm sm:text-base break-words">{msg.text}</p>
+                    <span className={`text-[10px] sm:text-xs mt-1 block ${
+                      msg.fromMe ? 'text-white/70' : 'text-muted-foreground'
+                    }`}>
+                      {msg.time}
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center py-8 sm:py-12">
+                <Icon name="MessageCircle" size={48} className="text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-sm sm:text-base">
+                  Нет сообщений. Начните переписку!
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t pt-4 mt-auto">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Введите сообщение..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (newMessage.trim()) {
+                      const msg = {
+                        text: newMessage,
+                        fromMe: true,
+                        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                      };
+                      setMessages({
+                        ...messages,
+                        [messageRecipient?.id]: [...(messages[messageRecipient?.id] || []), msg],
+                      });
+                      setNewMessage('');
+                      toast({
+                        title: 'Отправлено',
+                        description: 'Ваше сообщение доставлено',
+                      });
+                    }
+                  }
+                }}
+                className="flex-1"
+              />
+              <Button
+                onClick={() => {
+                  if (newMessage.trim()) {
+                    const msg = {
+                      text: newMessage,
+                      fromMe: true,
+                      time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+                    };
+                    setMessages({
+                      ...messages,
+                      [messageRecipient?.id]: [...(messages[messageRecipient?.id] || []), msg],
+                    });
+                    setNewMessage('');
+                    toast({
+                      title: 'Отправлено',
+                      description: 'Ваше сообщение доставлено',
+                    });
+                  }
+                }}
+                disabled={!newMessage.trim()}
+                size="icon"
+                className="shrink-0"
+              >
+                <Icon name="Send" size={18} />
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
