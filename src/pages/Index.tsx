@@ -43,15 +43,15 @@ const popularSearches = [
   'массаж',
 ];
 
-const mockReviews: any = {
+const mockComments: any = {
   1: [
-    { id: 1, author: 'Александр', rating: 5, comment: 'Отличная встреча, всё на высшем уровне!', date: '2 дня назад' },
-    { id: 2, author: 'Дмитрий', rating: 5, comment: 'Очень приятная девушка, рекомендую', date: '5 дней назад' },
-    { id: 3, author: 'Михаил', rating: 4, comment: 'Хорошо, соответствует описанию', date: '1 неделю назад' },
+    { id: 1, author: 'Александр', comment: 'Отличная встреча, всё на высшем уровне!', date: '2 дня назад' },
+    { id: 2, author: 'Дмитрий', comment: 'Очень приятная девушка, рекомендую', date: '5 дней назад' },
+    { id: 3, author: 'Михаил', comment: 'Хорошо, соответствует описанию', date: '1 неделю назад' },
   ],
   2: [
-    { id: 1, author: 'Иван', rating: 5, comment: 'Премиальный сервис, всё идеально', date: '1 день назад' },
-    { id: 2, author: 'Сергей', rating: 5, comment: 'Профессиональный подход, буду обращаться снова', date: '3 дня назад' },
+    { id: 1, author: 'Иван', comment: 'Премиальный сервис, всё идеально', date: '1 день назад' },
+    { id: 2, author: 'Сергей', comment: 'Профессиональный подход, буду обращаться снова', date: '3 дня назад' },
   ],
 };
 
@@ -61,84 +61,96 @@ const mockListings = [
     title: 'Анна, 25 лет',
     category: 'sex',
     location: 'Москва, Центр',
-    rating: 4.8,
-    reviews: 24,
+    likes: 42,
+    dislikes: 3,
+    commentsCount: 24,
     verified: true,
     description: 'Приятная встреча, комфортная обстановка',
     price: '5000 ₽/час',
     isVip: false,
     boostedAt: null,
     ownerId: 1,
+    protectionEnabled: false,
   },
   {
     id: 2,
     title: 'Элитное сопровождение VIP',
     category: 'escort',
     location: 'Москва, Пресня',
-    rating: 4.9,
-    reviews: 45,
+    likes: 89,
+    dislikes: 2,
+    commentsCount: 45,
     verified: true,
     description: 'Премиальный сервис для деловых встреч',
     price: '15000 ₽/час',
     isVip: true,
     boostedAt: Date.now(),
     ownerId: 1,
+    protectionEnabled: false,
   },
   {
     id: 3,
     title: 'Квартира посуточно',
     category: 'rent',
     location: 'Санкт-Петербург',
-    rating: 4.6,
-    reviews: 18,
+    likes: 28,
+    dislikes: 5,
+    commentsCount: 18,
     verified: false,
     description: 'Уютная квартира в центре города',
     price: '3000 ₽/сутки',
     isVip: false,
     boostedAt: null,
     ownerId: 2,
+    protectionEnabled: false,
   },
   {
     id: 4,
     title: 'Тур выходного дня',
     category: 'tourism',
     location: 'Сочи',
-    rating: 4.7,
-    reviews: 32,
+    likes: 56,
+    dislikes: 8,
+    commentsCount: 32,
     verified: true,
     description: 'Отдых на море с развлечениями',
     price: '25000 ₽',
     isVip: false,
     boostedAt: null,
     ownerId: 2,
+    protectionEnabled: false,
   },
   {
     id: 5,
     title: 'Мария, 28 лет',
     category: 'fetish',
     location: 'Москва, Юго-Запад',
-    rating: 4.9,
-    reviews: 56,
+    likes: 102,
+    dislikes: 4,
+    commentsCount: 56,
     verified: true,
     description: 'Особые встречи для ценителей',
     price: '8000 ₽/час',
     isVip: false,
     boostedAt: null,
     ownerId: 2,
+    protectionEnabled: false,
   },
   {
     id: 6,
     title: 'София, 24 года',
     category: 'trans',
     location: 'Москва, Арбат',
-    rating: 4.8,
-    reviews: 29,
+    likes: 64,
+    dislikes: 6,
+    commentsCount: 29,
     verified: true,
     description: 'Яркая и запоминающаяся встреча',
     price: '6000 ₽/час',
     isVip: false,
     boostedAt: null,
     ownerId: 2,
+    protectionEnabled: false,
   },
 ];
 
@@ -157,13 +169,14 @@ const Index = () => {
   const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [showCommentDialog, setShowCommentDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentType, setPaymentType] = useState<'vip' | 'boost' | null>(null);
+  const [paymentType, setPaymentType] = useState<'vip' | 'boost' | 'protection' | null>(null);
   const [listings, setListings] = useState(mockListings);
-  const [reviews, setReviews] = useState<any>(mockReviews);
+  const [comments, setComments] = useState<any>(mockComments);
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [userVotes, setUserVotes] = useState<{[key: number]: 'like' | 'dislike'}>({});
   const { toast } = useToast();
 
   useEffect(() => {
@@ -231,9 +244,8 @@ const Index = () => {
     price: '',
   });
 
-  const [newReview, setNewReview] = useState({
+  const [newComment, setNewComment] = useState({
     author: '',
-    rating: 5,
     comment: '',
   });
 
@@ -250,12 +262,14 @@ const Index = () => {
     const listing = {
       id: listings.length + 1,
       ...newListing,
-      rating: 0,
-      reviews: 0,
+      likes: 0,
+      dislikes: 0,
+      commentsCount: 0,
       verified: false,
       isVip: false,
       boostedAt: null,
       ownerId: currentUserId,
+      protectionEnabled: false,
     };
 
     setListings([listing, ...listings]);
@@ -307,36 +321,92 @@ const Index = () => {
 
   const myListings = listings.filter((listing) => listing.ownerId === currentUserId);
 
-  const handleAddReview = () => {
-    if (!newReview.author || !newReview.comment) {
+  const handleVote = (listingId: number, voteType: 'like' | 'dislike') => {
+    const listing = listings.find((l) => l.id === listingId);
+    if (listing?.protectionEnabled) {
+      toast({
+        title: 'Оценки отключены',
+        description: 'Владелец отключил возможность оценки этого объявления',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const previousVote = userVotes[listingId];
+    
+    setListings(listings.map((listing) => {
+      if (listing.id === listingId) {
+        let newLikes = listing.likes;
+        let newDislikes = listing.dislikes;
+
+        if (previousVote === voteType) {
+          if (voteType === 'like') newLikes--;
+          else newDislikes--;
+        } else {
+          if (previousVote === 'like') newLikes--;
+          if (previousVote === 'dislike') newDislikes--;
+          
+          if (voteType === 'like') newLikes++;
+          else newDislikes++;
+        }
+
+        return { ...listing, likes: newLikes, dislikes: newDislikes };
+      }
+      return listing;
+    }));
+
+    setUserVotes((prev) => {
+      const newVotes = { ...prev };
+      if (previousVote === voteType) {
+        delete newVotes[listingId];
+      } else {
+        newVotes[listingId] = voteType;
+      }
+      return newVotes;
+    });
+
+    if (selectedListing?.id === listingId) {
+      const updated = listings.find((l) => l.id === listingId);
+      if (updated) setSelectedListing(updated);
+    }
+  };
+
+  const handleAddComment = () => {
+    if (!newComment.author || !newComment.comment) {
       toast({
         title: 'Ошибка',
-        description: 'Заполните все поля отзыва',
+        description: 'Заполните все поля комментария',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (selectedListing?.protectionEnabled) {
+      toast({
+        title: 'Комментарии отключены',
+        description: 'Владелец отключил возможность комментировать это объявление',
         variant: 'destructive',
       });
       return;
     }
 
     const listingId = selectedListing.id;
-    const review = {
-      id: (reviews[listingId]?.length || 0) + 1,
-      ...newReview,
+    const comment = {
+      id: (comments[listingId]?.length || 0) + 1,
+      ...newComment,
       date: 'Только что',
     };
 
-    setReviews({
-      ...reviews,
-      [listingId]: [review, ...(reviews[listingId] || [])],
+    setComments({
+      ...comments,
+      [listingId]: [comment, ...(comments[listingId] || [])],
     });
 
     const updatedListings = listings.map((listing) => {
       if (listing.id === listingId) {
-        const allReviews = [review, ...(reviews[listingId] || [])];
-        const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
         return {
           ...listing,
-          rating: Math.round(avgRating * 10) / 10,
-          reviews: allReviews.length,
+          commentsCount: (comments[listingId]?.length || 0) + 1,
         };
       }
       return listing;
@@ -344,12 +414,12 @@ const Index = () => {
 
     setListings(updatedListings);
     setSelectedListing(updatedListings.find((l) => l.id === listingId));
-    setShowReviewDialog(false);
-    setNewReview({ author: '', rating: 5, comment: '' });
+    setShowCommentDialog(false);
+    setNewComment({ author: '', comment: '' });
 
     toast({
       title: 'Спасибо!',
-      description: 'Ваш отзыв опубликован',
+      description: 'Ваш комментарий опубликован',
     });
   };
 
@@ -384,6 +454,8 @@ const Index = () => {
           return { ...listing, isVip: true };
         } else if (paymentType === 'boost') {
           return { ...listing, boostedAt: Date.now() };
+        } else if (paymentType === 'protection') {
+          return { ...listing, protectionEnabled: true };
         }
       }
       return listing;
@@ -399,7 +471,9 @@ const Index = () => {
       description:
         paymentType === 'vip'
           ? 'Ваше объявление теперь VIP'
-          : 'Объявление поднято в топ',
+          : paymentType === 'boost'
+          ? 'Объявление поднято в топ'
+          : 'Защита от оценок и комментариев активирована',
     });
   };
 
@@ -612,6 +686,12 @@ const Index = () => {
                               Верифицирован
                             </Badge>
                           )}
+                          {listing.protectionEnabled && (
+                            <Badge className="bg-orange-100 text-orange-700">
+                              <Icon name="Shield" size={12} className="mr-1" />
+                              Защищено
+                            </Badge>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
@@ -623,9 +703,13 @@ const Index = () => {
                             <Icon name="MapPin" size={14} />
                             {listing.location}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <Icon name="Star" size={14} className="text-yellow-500 fill-yellow-500" />
-                            {listing.rating} ({listing.reviews})
+                          <div className="flex items-center gap-2">
+                            <span>👍 {listing.likes}</span>
+                            <span>👎 {listing.dislikes}</span>
+                            <span className="flex items-center gap-0.5">
+                              <Icon name="MessageCircle" size={12} />
+                              {listing.commentsCount}
+                            </span>
                           </div>
                         </div>
 
@@ -654,7 +738,7 @@ const Index = () => {
                             }}
                           >
                             <Icon name="Crown" size={14} className="mr-1" />
-                            Сделать VIP
+                            VIP (500₽)
                           </Button>
                         )}
                         
@@ -668,8 +752,23 @@ const Index = () => {
                           }}
                         >
                           <Icon name="TrendingUp" size={14} className="mr-1" />
-                          Поднять
+                          Поднять (200₽)
                         </Button>
+                        
+                        {!listing.protectionEnabled && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedListing(listing);
+                              setPaymentType('protection');
+                              setShowPaymentDialog(true);
+                            }}
+                          >
+                            <Icon name="Shield" size={14} className="mr-1" />
+                            Защита (300₽)
+                          </Button>
+                        )}
                         
                         <Button
                           variant="destructive"
@@ -784,13 +883,23 @@ const Index = () => {
                     <span className="line-clamp-1">{listing.location}</span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-0.5">
-                      <Icon name="Star" size={12} className="text-yellow-500 fill-yellow-500" />
-                      <span className="text-xs font-medium">{listing.rating}</span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-xs">👍</span>
+                        <span className="text-xs font-medium text-green-600">{listing.likes}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-xs">👎</span>
+                        <span className="text-xs font-medium text-red-600">{listing.dislikes}</span>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <Icon name="MessageCircle" size={10} className="text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">{listing.commentsCount}</span>
+                      </div>
                     </div>
-                    <span className="text-xs font-semibold text-primary line-clamp-1">{listing.price}</span>
                   </div>
+                  <span className="text-xs font-semibold text-primary block">{listing.price}</span>
                 </div>
               </div>
             </Card>
@@ -1016,47 +1125,42 @@ const Index = () => {
                     Верифицирован
                   </Badge>
                 )}
-                <div className="flex items-center gap-1">
-                  <Icon name="Star" size={16} className="text-yellow-500 fill-yellow-500" />
-                  <span className="font-medium">{selectedListing?.rating}</span>
-                  <span className="text-sm text-muted-foreground">
-                    ({selectedListing?.reviews} отзывов)
-                  </span>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                {!selectedListing?.isVip && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setPaymentType('vip');
-                      setShowPaymentDialog(true);
-                    }}
-                  >
-                    <Icon name="Crown" size={14} className="mr-1" />
-                    Сделать VIP
-                  </Button>
+                {selectedListing?.protectionEnabled && (
+                  <Badge className="bg-orange-100 text-orange-700">
+                    <Icon name="Shield" size={14} className="mr-1" />
+                    Защищено
+                  </Badge>
                 )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setPaymentType('boost');
-                    setShowPaymentDialog(true);
-                  }}
-                >
-                  <Icon name="TrendingUp" size={14} className="mr-1" />
-                  Поднять в топ
-                </Button>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center text-muted-foreground">
-                <Icon name="MapPin" size={18} className="mr-2" />
-                {selectedListing?.location}
+            <div className="flex items-center justify-between border rounded-lg p-4 bg-muted/30">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant={userVotes[selectedListing?.id] === 'like' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleVote(selectedListing?.id, 'like')}
+                    disabled={selectedListing?.protectionEnabled}
+                  >
+                    <span className="text-base">👍</span>
+                    <span className="ml-1 font-semibold">{selectedListing?.likes}</span>
+                  </Button>
+                  <Button
+                    variant={userVotes[selectedListing?.id] === 'dislike' ? 'destructive' : 'outline'}
+                    size="sm"
+                    onClick={() => handleVote(selectedListing?.id, 'dislike')}
+                    disabled={selectedListing?.protectionEnabled}
+                  >
+                    <span className="text-base">👎</span>
+                    <span className="ml-1 font-semibold">{selectedListing?.dislikes}</span>
+                  </Button>
+                </div>
+                <div className="h-8 w-px bg-border" />
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Icon name="MessageCircle" size={16} />
+                  <span className="text-sm font-medium">{selectedListing?.commentsCount} комментариев</span>
+                </div>
               </div>
               <Button
                 variant="ghost"
@@ -1074,47 +1178,87 @@ const Index = () => {
               </Button>
             </div>
 
+            <div className="flex items-center text-muted-foreground">
+              <Icon name="MapPin" size={18} className="mr-2" />
+              {selectedListing?.location}
+            </div>
+
             <p className="text-foreground leading-relaxed">
               {selectedListing?.description}
             </p>
 
+            {selectedListing?.ownerId === currentUserId && (
+              <div className="flex gap-2 pt-2 border-t">
+                {!selectedListing?.isVip && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPaymentType('vip');
+                      setShowPaymentDialog(true);
+                    }}
+                  >
+                    <Icon name="Crown" size={14} className="mr-1" />
+                    Сделать VIP (500₽)
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPaymentType('boost');
+                    setShowPaymentDialog(true);
+                  }}
+                >
+                  <Icon name="TrendingUp" size={14} className="mr-1" />
+                  Поднять (200₽)
+                </Button>
+                {!selectedListing?.protectionEnabled && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPaymentType('protection');
+                      setShowPaymentDialog(true);
+                    }}
+                  >
+                    <Icon name="Shield" size={14} className="mr-1" />
+                    Защита (300₽)
+                  </Button>
+                )}
+              </div>
+            )}
+
             <div className="pt-4 border-t">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold">Отзывы</h3>
-                <Button onClick={() => setShowReviewDialog(true)} variant="outline" size="sm">
+                <h3 className="text-lg font-semibold">Комментарии</h3>
+                <Button 
+                  onClick={() => setShowCommentDialog(true)} 
+                  variant="outline" 
+                  size="sm"
+                  disabled={selectedListing?.protectionEnabled}
+                >
                   <Icon name="MessageSquarePlus" size={16} className="mr-2" />
-                  Оставить отзыв
+                  Оставить комментарий
                 </Button>
               </div>
 
               <div className="space-y-4 max-h-[300px] overflow-y-auto mb-6">
-                {reviews[selectedListing?.id]?.length > 0 ? (
-                  reviews[selectedListing?.id].map((review: any) => (
-                    <div key={review.id} className="border-b pb-4 last:border-0">
+                {comments[selectedListing?.id]?.length > 0 ? (
+                  comments[selectedListing?.id].map((comment: any) => (
+                    <div key={comment.id} className="border-b pb-4 last:border-0">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">{review.author}</span>
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Icon
-                              key={i}
-                              name="Star"
-                              size={14}
-                              className={
-                                i < review.rating
-                                  ? 'text-yellow-500 fill-yellow-500'
-                                  : 'text-gray-300'
-                              }
-                            />
-                          ))}
-                        </div>
+                        <span className="font-medium">{comment.author}</span>
+                        <span className="text-xs text-muted-foreground">{comment.date}</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-1">{review.comment}</p>
-                      <span className="text-xs text-muted-foreground">{review.date}</span>
+                      <p className="text-sm text-muted-foreground">{comment.comment}</p>
                     </div>
                   ))
                 ) : (
                   <p className="text-center text-muted-foreground py-4">
-                    Пока нет отзывов. Будьте первым!
+                    {selectedListing?.protectionEnabled 
+                      ? 'Комментарии отключены владельцем'
+                      : 'Пока нет комментариев. Будьте первым!'}
                   </p>
                 )}
               </div>
@@ -1133,10 +1277,10 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+      <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Оставить отзыв</DialogTitle>
+            <DialogTitle className="text-2xl">Оставить комментарий</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-5">
@@ -1145,56 +1289,33 @@ const Index = () => {
               <Input
                 id="author"
                 placeholder="Например: Александр"
-                value={newReview.author}
-                onChange={(e) => setNewReview({ ...newReview, author: e.target.value })}
+                value={newComment.author}
+                onChange={(e) => setNewComment({ ...newComment, author: e.target.value })}
                 className="mt-1.5"
               />
-            </div>
-
-            <div>
-              <Label>Оценка *</Label>
-              <div className="flex items-center gap-2 mt-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setNewReview({ ...newReview, rating: star })}
-                    className="transition-transform hover:scale-110"
-                  >
-                    <Icon
-                      name="Star"
-                      size={32}
-                      className={
-                        star <= newReview.rating
-                          ? 'text-yellow-500 fill-yellow-500'
-                          : 'text-gray-300'
-                      }
-                    />
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div>
               <Label htmlFor="comment">Комментарий *</Label>
               <Textarea
                 id="comment"
-                placeholder="Расскажите о вашем опыте"
-                value={newReview.comment}
-                onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                placeholder="Поделитесь своим мнением"
+                value={newComment.comment}
+                onChange={(e) => setNewComment({ ...newComment, comment: e.target.value })}
                 className="mt-1.5 min-h-[120px]"
               />
             </div>
 
             <div className="flex gap-3 pt-4">
-              <Button onClick={handleAddReview} className="flex-1">
+              <Button onClick={handleAddComment} className="flex-1">
                 <Icon name="Send" size={18} className="mr-2" />
                 Отправить
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
-                  setShowReviewDialog(false);
-                  setNewReview({ author: '', rating: 5, comment: '' });
+                  setShowCommentDialog(false);
+                  setNewComment({ author: '', comment: '' });
                 }}
                 className="flex-1"
               >
@@ -1209,7 +1330,11 @@ const Index = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl">
-              {paymentType === 'vip' ? 'Сделать объявление VIP' : 'Поднять в топ'}
+              {paymentType === 'vip' 
+                ? 'Сделать объявление VIP' 
+                : paymentType === 'boost'
+                ? 'Поднять в топ'
+                : 'Защита от оценок и комментариев'}
             </DialogTitle>
           </DialogHeader>
 
@@ -1217,10 +1342,14 @@ const Index = () => {
             <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 rounded-lg">
               <div className="flex items-center justify-between mb-4">
                 <span className="text-lg font-semibold">
-                  {paymentType === 'vip' ? 'VIP размещение' : 'Поднятие в топ'}
+                  {paymentType === 'vip' 
+                    ? 'VIP размещение' 
+                    : paymentType === 'boost'
+                    ? 'Поднятие в топ'
+                    : 'Защита объявления'}
                 </span>
                 <Badge variant="secondary" className="text-lg px-3 py-1">
-                  {paymentType === 'vip' ? '500 ₽' : '200 ₽'}
+                  {paymentType === 'vip' ? '500 ₽' : paymentType === 'boost' ? '200 ₽' : '300 ₽'}
                 </Badge>
               </div>
 
@@ -1244,7 +1373,7 @@ const Index = () => {
                       <p>Действует 30 дней</p>
                     </div>
                   </>
-                ) : (
+                ) : paymentType === 'boost' ? (
                   <>
                     <div className="flex items-start gap-2">
                       <Icon name="ArrowUp" size={16} className="text-primary mt-0.5" />
@@ -1261,6 +1390,25 @@ const Index = () => {
                     <div className="flex items-start gap-2">
                       <Icon name="Clock" size={16} className="text-primary mt-0.5" />
                       <p>Действует 7 дней</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <Icon name="Shield" size={16} className="text-primary mt-0.5" />
+                      <p>Полный запрет на оценки (лайки/дизлайки)</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="MessageOff" size={16} className="text-primary mt-0.5" />
+                      <p>Полный запрет на комментарии</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="BadgeCheck" size={16} className="text-primary mt-0.5" />
+                      <p>Значок "Защищено"</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="Clock" size={16} className="text-primary mt-0.5" />
+                      <p>Действует бессрочно</p>
                     </div>
                   </>
                 )}
@@ -1284,7 +1432,7 @@ const Index = () => {
             <div className="flex gap-3 pt-4">
               <Button onClick={handlePayment} className="flex-1" size="lg">
                 <Icon name="Check" size={18} className="mr-2" />
-                Оплатить {paymentType === 'vip' ? '500 ₽' : '200 ₽'}
+                Оплатить {paymentType === 'vip' ? '500 ₽' : paymentType === 'boost' ? '200 ₽' : '300 ₽'}
               </Button>
               <Button
                 variant="outline"
