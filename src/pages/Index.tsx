@@ -3100,7 +3100,6 @@ const Index = () => {
                 </span>
               </div>
             </div>
-          }
         </DialogContent>
       </Dialog>
 
