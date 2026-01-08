@@ -73,6 +73,20 @@ const mockListings = [
     protectionEnabled: false,
     photos: [],
     privatePhotos: [],
+    profile: {
+      age: 25,
+      weight: 55,
+      height: 168,
+      bodyType: 'Стройная',
+      breastSize: '3',
+      orientation: 'Гетеро',
+      services: 'Классика, минет, массаж',
+      intimateHaircut: 'Бразильская эпиляция',
+      tattoos: 'Нет',
+      piercings: 'Нет',
+      smoking: 'Не курю',
+      alcohol: 'Иногда',
+    },
   },
   {
     id: 2,
@@ -188,6 +202,7 @@ const Index = () => {
   const [paymentType, setPaymentType] = useState<'vip' | 'boost' | 'protection' | null>(null);
   const [listings, setListings] = useState(mockListings);
   const [comments, setComments] = useState<any>(mockComments);
+  const [cardPhotoIndexes, setCardPhotoIndexes] = useState<{[key: number]: number}>({});
   const [favorites, setFavorites] = useState<number[]>([]);
   const [userVotes, setUserVotes] = useState<{[key: number]: 'like' | 'dislike'}>({});
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -262,6 +277,22 @@ const Index = () => {
     price: '',
     photos: [] as string[],
     privatePhotos: [] as string[],
+    profile: {
+      age: '',
+      weight: '',
+      height: '',
+      bodyType: '',
+      breastSize: '',
+      penisSize: '',
+      orientation: '',
+      role: '',
+      services: '',
+      intimateHaircut: '',
+      tattoos: '',
+      piercings: '',
+      smoking: '',
+      alcohol: '',
+    },
   });
 
   const [newComment, setNewComment] = useState({
@@ -304,6 +335,22 @@ const Index = () => {
       price: '',
       photos: [],
       privatePhotos: [],
+      profile: {
+        age: '',
+        weight: '',
+        height: '',
+        bodyType: '',
+        breastSize: '',
+        penisSize: '',
+        orientation: '',
+        role: '',
+        services: '',
+        intimateHaircut: '',
+        tattoos: '',
+        piercings: '',
+        smoking: '',
+        alcohol: '',
+      },
     });
 
     toast({
@@ -1261,17 +1308,52 @@ const Index = () => {
                     : 'bg-gradient-to-br from-primary/20 to-primary/5'
                 }`}>
                   {listing.photos && listing.photos.length > 0 ? (
-                    <div className="relative w-full h-full">
+                    <div className="relative w-full h-full group">
                       <img
-                        src={listing.photos[0]}
+                        src={listing.photos[cardPhotoIndexes[listing.id] || 0]}
                         alt={listing.title}
                         className="w-full h-full object-cover"
                       />
                       {listing.photos.length > 1 && (
-                        <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0 text-xs">
-                          <Icon name="Image" size={10} className="mr-1" />
-                          {listing.photos.length}
-                        </Badge>
+                        <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const currentIdx = cardPhotoIndexes[listing.id] || 0;
+                              const newIdx = currentIdx === 0 ? listing.photos.length - 1 : currentIdx - 1;
+                              setCardPhotoIndexes({...cardPhotoIndexes, [listing.id]: newIdx});
+                            }}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                          >
+                            <Icon name="ChevronLeft" size={14} />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const currentIdx = cardPhotoIndexes[listing.id] || 0;
+                              const newIdx = currentIdx === listing.photos.length - 1 ? 0 : currentIdx + 1;
+                              setCardPhotoIndexes({...cardPhotoIndexes, [listing.id]: newIdx});
+                            }}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                          >
+                            <Icon name="ChevronRight" size={14} />
+                          </button>
+                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                            {listing.photos.map((_: string, idx: number) => (
+                              <div
+                                key={idx}
+                                className={`w-1 h-1 rounded-full transition-all ${
+                                  idx === (cardPhotoIndexes[listing.id] || 0)
+                                    ? 'bg-white w-2'
+                                    : 'bg-white/50'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0 text-[10px]">
+                            {(cardPhotoIndexes[listing.id] || 0) + 1}/{listing.photos.length}
+                          </Badge>
+                        </>
                       )}
                     </div>
                   ) : (
@@ -1510,6 +1592,217 @@ const Index = () => {
                   </Button>
                 </div>
               )}
+            </div>
+
+            <div className="border-t pt-5">
+              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                <Icon name="UserCircle" size={20} className="text-primary" />
+                Параметры профиля
+              </h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="age">Возраст</Label>
+                  <Input
+                    id="age"
+                    type="number"
+                    placeholder="25"
+                    value={newListing.profile.age}
+                    onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, age: e.target.value} })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="weight">Вес (кг)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    placeholder="55"
+                    value={newListing.profile.weight}
+                    onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, weight: e.target.value} })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="height">Рост (см)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    placeholder="168"
+                    value={newListing.profile.height}
+                    onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, height: e.target.value} })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="bodyType">Форма тела</Label>
+                  <Select
+                    value={newListing.profile.bodyType}
+                    onValueChange={(value) => setNewListing({ ...newListing, profile: {...newListing.profile, bodyType: value} })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Выберите" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Стройная">Стройная</SelectItem>
+                      <SelectItem value="Спортивная">Спортивная</SelectItem>
+                      <SelectItem value="Полная">Полная</SelectItem>
+                      <SelectItem value="Худая">Худая</SelectItem>
+                      <SelectItem value="Атлетическая">Атлетическая</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="breastSize">Размер груди</Label>
+                  <Select
+                    value={newListing.profile.breastSize}
+                    onValueChange={(value) => setNewListing({ ...newListing, profile: {...newListing.profile, breastSize: value} })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Выберите" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="4">4</SelectItem>
+                      <SelectItem value="5+">5+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="penisSize">Размер члена (см)</Label>
+                  <Input
+                    id="penisSize"
+                    type="number"
+                    placeholder="Опционально"
+                    value={newListing.profile.penisSize}
+                    onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, penisSize: e.target.value} })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="orientation">Ориентация</Label>
+                  <Select
+                    value={newListing.profile.orientation}
+                    onValueChange={(value) => setNewListing({ ...newListing, profile: {...newListing.profile, orientation: value} })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Выберите" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Гетеро">Гетеро</SelectItem>
+                      <SelectItem value="Би">Би</SelectItem>
+                      <SelectItem value="Гомо">Гомо</SelectItem>
+                      <SelectItem value="Лесби">Лесби</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="role">Роль</Label>
+                  <Select
+                    value={newListing.profile.role}
+                    onValueChange={(value) => setNewListing({ ...newListing, profile: {...newListing.profile, role: value} })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Выберите" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Актив">Актив</SelectItem>
+                      <SelectItem value="Пассив">Пассив</SelectItem>
+                      <SelectItem value="Универсал">Универсал</SelectItem>
+                      <SelectItem value="Не указано">Не указано</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label htmlFor="services">Услуги</Label>
+                <Textarea
+                  id="services"
+                  placeholder="Например: Классика, минет, массаж"
+                  value={newListing.profile.services}
+                  onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, services: e.target.value} })}
+                  className="mt-1.5"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <Label htmlFor="intimateHaircut">Интимная стрижка</Label>
+                  <Input
+                    id="intimateHaircut"
+                    placeholder="Например: Бразильская"
+                    value={newListing.profile.intimateHaircut}
+                    onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, intimateHaircut: e.target.value} })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="tattoos">Татуировки</Label>
+                  <Input
+                    id="tattoos"
+                    placeholder="Да/Нет"
+                    value={newListing.profile.tattoos}
+                    onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, tattoos: e.target.value} })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="piercings">Пирсинг</Label>
+                  <Input
+                    id="piercings"
+                    placeholder="Да/Нет"
+                    value={newListing.profile.piercings}
+                    onChange={(e) => setNewListing({ ...newListing, profile: {...newListing.profile, piercings: e.target.value} })}
+                    className="mt-1.5"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="smoking">Курение</Label>
+                  <Select
+                    value={newListing.profile.smoking}
+                    onValueChange={(value) => setNewListing({ ...newListing, profile: {...newListing.profile, smoking: value} })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Выберите" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Не курю">Не курю</SelectItem>
+                      <SelectItem value="Курю">Курю</SelectItem>
+                      <SelectItem value="Иногда">Иногда</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="alcohol">Алкоголь</Label>
+                  <Select
+                    value={newListing.profile.alcohol}
+                    onValueChange={(value) => setNewListing({ ...newListing, profile: {...newListing.profile, alcohol: value} })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue placeholder="Выберите" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Не пью">Не пью</SelectItem>
+                      <SelectItem value="Иногда">Иногда</SelectItem>
+                      <SelectItem value="Регулярно">Регулярно</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
 
             <div className="flex gap-3 pt-4">
@@ -1879,6 +2172,121 @@ const Index = () => {
             <p className="text-foreground leading-relaxed">
               {selectedListing?.description}
             </p>
+
+            {selectedListing?.profile && (
+              <div className="border rounded-lg p-4 bg-gradient-to-br from-purple-50 to-pink-50">
+                <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                  <Icon name="UserCircle" size={20} className="text-primary" />
+                  Параметры профиля
+                </h3>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                  {selectedListing.profile.age && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Cake" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Возраст:</span>
+                      <span className="font-medium">{selectedListing.profile.age}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.weight && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Weight" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Вес:</span>
+                      <span className="font-medium">{selectedListing.profile.weight} кг</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.height && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Ruler" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Рост:</span>
+                      <span className="font-medium">{selectedListing.profile.height} см</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.bodyType && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="User" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Тело:</span>
+                      <span className="font-medium">{selectedListing.profile.bodyType}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.breastSize && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Heart" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Грудь:</span>
+                      <span className="font-medium">{selectedListing.profile.breastSize}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.penisSize && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Ruler" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Размер:</span>
+                      <span className="font-medium">{selectedListing.profile.penisSize} см</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.orientation && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Compass" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Ориентация:</span>
+                      <span className="font-medium">{selectedListing.profile.orientation}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.role && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="UserCheck" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Роль:</span>
+                      <span className="font-medium">{selectedListing.profile.role}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.intimateHaircut && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Scissors" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Стрижка:</span>
+                      <span className="font-medium">{selectedListing.profile.intimateHaircut}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.tattoos && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Paintbrush" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Тату:</span>
+                      <span className="font-medium">{selectedListing.profile.tattoos}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.piercings && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Circle" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Пирсинг:</span>
+                      <span className="font-medium">{selectedListing.profile.piercings}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.smoking && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Cigarette" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Курение:</span>
+                      <span className="font-medium">{selectedListing.profile.smoking}</span>
+                    </div>
+                  )}
+                  {selectedListing.profile.alcohol && (
+                    <div className="flex items-center gap-2">
+                      <Icon name="Wine" size={14} className="text-muted-foreground" />
+                      <span className="text-muted-foreground">Алкоголь:</span>
+                      <span className="font-medium">{selectedListing.profile.alcohol}</span>
+                    </div>
+                  )}
+                </div>
+
+                {selectedListing.profile.services && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex items-start gap-2">
+                      <Icon name="Star" size={14} className="text-muted-foreground mt-0.5" />
+                      <div>
+                        <span className="text-muted-foreground text-sm">Услуги:</span>
+                        <p className="font-medium text-sm mt-1">{selectedListing.profile.services}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {selectedListing?.privatePhotos && selectedListing.privatePhotos.length > 0 && (
               <div className="border rounded-lg p-4 bg-muted/20">
