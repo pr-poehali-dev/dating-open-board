@@ -54,6 +54,8 @@ const mockListings = [
     verified: true,
     description: 'Приятная встреча, комфортная обстановка',
     price: '5000 ₽/час',
+    isVip: false,
+    boostedAt: null,
   },
   {
     id: 2,
@@ -65,6 +67,8 @@ const mockListings = [
     verified: true,
     description: 'Премиальный сервис для деловых встреч',
     price: '15000 ₽/час',
+    isVip: true,
+    boostedAt: Date.now(),
   },
   {
     id: 3,
@@ -76,6 +80,8 @@ const mockListings = [
     verified: false,
     description: 'Уютная квартира в центре города',
     price: '3000 ₽/сутки',
+    isVip: false,
+    boostedAt: null,
   },
   {
     id: 4,
@@ -87,6 +93,8 @@ const mockListings = [
     verified: true,
     description: 'Отдых на море с развлечениями',
     price: '25000 ₽',
+    isVip: false,
+    boostedAt: null,
   },
   {
     id: 5,
@@ -98,6 +106,8 @@ const mockListings = [
     verified: true,
     description: 'Особые встречи для ценителей',
     price: '8000 ₽/час',
+    isVip: false,
+    boostedAt: null,
   },
   {
     id: 6,
@@ -109,6 +119,8 @@ const mockListings = [
     verified: true,
     description: 'Яркая и запоминающаяся встреча',
     price: '6000 ₽/час',
+    isVip: false,
+    boostedAt: null,
   },
 ];
 
@@ -119,6 +131,8 @@ const Index = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentType, setPaymentType] = useState<'vip' | 'boost' | null>(null);
   const [listings, setListings] = useState(mockListings);
   const [reviews, setReviews] = useState<any>(mockReviews);
   const [favorites, setFavorites] = useState<number[]>([]);
@@ -154,6 +168,8 @@ const Index = () => {
       rating: 0,
       reviews: 0,
       verified: false,
+      isVip: false,
+      boostedAt: null,
     };
 
     setListings([listing, ...listings]);
@@ -240,15 +256,52 @@ const Index = () => {
     });
   };
 
-  const filteredListings = listings.filter((listing) => {
-    const matchesCategory = !selectedCategory || listing.category === selectedCategory;
-    const matchesSearch =
-      !searchQuery ||
-      listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      listing.location.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFavorites = !showFavorites || favorites.includes(listing.id);
-    return matchesCategory && matchesSearch && matchesFavorites;
-  });
+  const handlePayment = () => {
+    if (!selectedListing || !paymentType) return;
+
+    const updatedListings = listings.map((listing) => {
+      if (listing.id === selectedListing.id) {
+        if (paymentType === 'vip') {
+          return { ...listing, isVip: true };
+        } else if (paymentType === 'boost') {
+          return { ...listing, boostedAt: Date.now() };
+        }
+      }
+      return listing;
+    });
+
+    setListings(updatedListings);
+    setSelectedListing(updatedListings.find((l) => l.id === selectedListing.id));
+    setShowPaymentDialog(false);
+    setPaymentType(null);
+
+    toast({
+      title: 'Оплата успешна!',
+      description:
+        paymentType === 'vip'
+          ? 'Ваше объявление теперь VIP'
+          : 'Объявление поднято в топ',
+    });
+  };
+
+  const filteredListings = listings
+    .filter((listing) => {
+      const matchesCategory = !selectedCategory || listing.category === selectedCategory;
+      const matchesSearch =
+        !searchQuery ||
+        listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        listing.location.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFavorites = !showFavorites || favorites.includes(listing.id);
+      return matchesCategory && matchesSearch && matchesFavorites;
+    })
+    .sort((a, b) => {
+      if (a.isVip && !b.isVip) return -1;
+      if (!a.isVip && b.isVip) return 1;
+      if (a.boostedAt && b.boostedAt) return b.boostedAt - a.boostedAt;
+      if (a.boostedAt && !b.boostedAt) return -1;
+      if (!a.boostedAt && b.boostedAt) return 1;
+      return 0;
+    });
 
   const getCategoryIcon = (categoryId: string) => {
     return categories.find((c) => c.id === categoryId)?.icon || 'Circle';
@@ -354,6 +407,18 @@ const Index = () => {
               className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-[1.02] relative"
               onClick={() => setSelectedListing(listing)}
             >
+              {listing.isVip && (
+                <Badge className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
+                  <Icon name="Crown" size={12} className="mr-1" />
+                  VIP
+                </Badge>
+              )}
+              {listing.boostedAt && (
+                <Badge className="absolute top-3 left-3 z-10 bg-blue-500 text-white">
+                  <Icon name="TrendingUp" size={12} className="mr-1" />
+                  ТОП
+                </Badge>
+              )}
               <button
                 onClick={(e) => toggleFavorite(listing.id, e)}
                 className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 transition-all hover:scale-110 shadow-md"
@@ -364,7 +429,11 @@ const Index = () => {
                   className={favorites.includes(listing.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
                 />
               </button>
-              <div className="h-48 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+              <div className={`h-48 bg-gradient-to-br flex items-center justify-center ${
+                listing.isVip
+                  ? 'from-yellow-100 to-orange-100'
+                  : 'from-primary/20 to-primary/5'
+              }`}>
                 <Icon
                   name={getCategoryIcon(listing.category) as any}
                   size={64}
@@ -517,19 +586,60 @@ const Index = () => {
               />
             </div>
 
-            <div className="flex items-center gap-4">
-              {selectedListing?.verified && (
-                <Badge className="bg-green-100 text-green-700">
-                  <Icon name="CheckCircle" size={14} className="mr-1" />
-                  Верифицирован
-                </Badge>
-              )}
-              <div className="flex items-center gap-1">
-                <Icon name="Star" size={16} className="text-yellow-500 fill-yellow-500" />
-                <span className="font-medium">{selectedListing?.rating}</span>
-                <span className="text-sm text-muted-foreground">
-                  ({selectedListing?.reviews} отзывов)
-                </span>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                {selectedListing?.isVip && (
+                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
+                    <Icon name="Crown" size={14} className="mr-1" />
+                    VIP
+                  </Badge>
+                )}
+                {selectedListing?.boostedAt && (
+                  <Badge className="bg-blue-500 text-white">
+                    <Icon name="TrendingUp" size={14} className="mr-1" />
+                    ТОП
+                  </Badge>
+                )}
+                {selectedListing?.verified && (
+                  <Badge className="bg-green-100 text-green-700">
+                    <Icon name="CheckCircle" size={14} className="mr-1" />
+                    Верифицирован
+                  </Badge>
+                )}
+                <div className="flex items-center gap-1">
+                  <Icon name="Star" size={16} className="text-yellow-500 fill-yellow-500" />
+                  <span className="font-medium">{selectedListing?.rating}</span>
+                  <span className="text-sm text-muted-foreground">
+                    ({selectedListing?.reviews} отзывов)
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                {!selectedListing?.isVip && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPaymentType('vip');
+                      setShowPaymentDialog(true);
+                    }}
+                  >
+                    <Icon name="Crown" size={14} className="mr-1" />
+                    Сделать VIP
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setPaymentType('boost');
+                    setShowPaymentDialog(true);
+                  }}
+                >
+                  <Icon name="TrendingUp" size={14} className="mr-1" />
+                  Поднять в топ
+                </Button>
               </div>
             </div>
 
@@ -677,6 +787,102 @@ const Index = () => {
                   setNewReview({ author: '', rating: 5, comment: '' });
                 }}
                 className="flex-1"
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">
+              {paymentType === 'vip' ? 'Сделать объявление VIP' : 'Поднять в топ'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-lg font-semibold">
+                  {paymentType === 'vip' ? 'VIP размещение' : 'Поднятие в топ'}
+                </span>
+                <Badge variant="secondary" className="text-lg px-3 py-1">
+                  {paymentType === 'vip' ? '500 ₽' : '200 ₽'}
+                </Badge>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                {paymentType === 'vip' ? (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <Icon name="Crown" size={16} className="text-primary mt-0.5" />
+                      <p>Золотая рамка и значок VIP</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="TrendingUp" size={16} className="text-primary mt-0.5" />
+                      <p>Приоритетное размещение в списках</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="Eye" size={16} className="text-primary mt-0.5" />
+                      <p>До 5x больше просмотров</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="Clock" size={16} className="text-primary mt-0.5" />
+                      <p>Действует 30 дней</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <Icon name="ArrowUp" size={16} className="text-primary mt-0.5" />
+                      <p>Поднятие в самый верх списка</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="TrendingUp" size={16} className="text-primary mt-0.5" />
+                      <p>Значок "ТОП" на объявлении</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="Eye" size={16} className="text-primary mt-0.5" />
+                      <p>До 3x больше просмотров</p>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Icon name="Clock" size={16} className="text-primary mt-0.5" />
+                      <p>Действует 7 дней</p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Способ оплаты</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <Button variant="outline" className="h-20 flex-col">
+                  <Icon name="CreditCard" size={24} className="mb-2" />
+                  <span className="text-sm">Карта</span>
+                </Button>
+                <Button variant="outline" className="h-20 flex-col">
+                  <Icon name="Wallet" size={24} className="mb-2" />
+                  <span className="text-sm">Кошелек</span>
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handlePayment} className="flex-1" size="lg">
+                <Icon name="Check" size={18} className="mr-2" />
+                Оплатить {paymentType === 'vip' ? '500 ₽' : '200 ₽'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowPaymentDialog(false);
+                  setPaymentType(null);
+                }}
+                size="lg"
               >
                 Отмена
               </Button>
