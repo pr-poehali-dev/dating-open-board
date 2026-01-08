@@ -809,46 +809,46 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b sticky top-0 bg-white/80 backdrop-blur-md z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-primary">МойДосуг</h1>
-            <div className="flex items-center gap-2">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-primary">МойДосуг</h1>
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 onClick={() => setShowFavorites(!showFavorites)}
                 variant={showFavorites ? 'default' : 'outline'}
                 size="sm"
-                className="relative"
+                className="relative h-8 sm:h-9 px-2 sm:px-3"
               >
-                <Icon name="Heart" size={16} className="mr-2" />
-                Избранное
+                <Icon name="Heart" size={14} className="sm:mr-2" />
+                <span className="hidden sm:inline">Избранное</span>
                 {favorites.length > 0 && (
                   <Badge
                     variant="secondary"
-                    className="ml-2 bg-red-500 text-white h-5 w-5 p-0 flex items-center justify-center rounded-full"
+                    className="ml-1 sm:ml-2 bg-red-500 text-white h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center rounded-full text-[10px] sm:text-xs"
                   >
                     {favorites.length}
                   </Badge>
                 )}
               </Button>
-              <Button onClick={() => setShowCreateDialog(true)} size="sm">
-                <Icon name="Plus" size={16} className="mr-2" />
-                Разместить
+              <Button onClick={() => setShowCreateDialog(true)} size="sm" className="h-8 sm:h-9 px-2 sm:px-3">
+                <Icon name="Plus" size={14} className="sm:mr-2" />
+                <span className="hidden sm:inline">Разместить</span>
               </Button>
               <Button
                 variant={showProfile ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setShowProfile(!showProfile)}
-                className="relative"
+                className="relative h-8 sm:h-9 px-2 sm:px-3"
               >
-                <Icon name="User" size={16} className="mr-2" />
-                Кабинет
+                <Icon name="User" size={14} className="sm:mr-2" />
+                <span className="hidden sm:inline">Кабинет</span>
                 {myListings.length > 0 && (
-                  <Badge variant="secondary" className="ml-2 bg-primary text-white h-5 w-5 p-0 flex items-center justify-center rounded-full">
+                  <Badge variant="secondary" className="ml-1 sm:ml-2 bg-primary text-white h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center rounded-full text-[10px] sm:text-xs">
                     {myListings.length}
                   </Badge>
                 )}
                 {getPendingRequests() > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
                     {getPendingRequests()}
                   </span>
                 )}
@@ -975,7 +975,7 @@ const Index = () => {
             ) : (
               <div className="space-y-4">
                 {(getAccessGrantedByMe() > 0 || getAccessGrantedToMe() > 0 || getMutualExchangesCount() > 0) && (
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                     <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
                       <div className="flex items-center justify-between mb-2">
                         <Icon name="Unlock" size={20} className="text-green-600" />
@@ -1183,9 +1183,9 @@ const Index = () => {
           </div>
         ) : (
           <>
-        <div className="mb-8 animate-fade-in">
-          <h2 className="text-xl font-semibold mb-4">Категории</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+        <div className="mb-6 sm:mb-8 animate-fade-in">
+          <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Категории</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -1194,37 +1194,37 @@ const Index = () => {
                     selectedCategory === category.id ? null : category.id
                   )
                 }
-                className={`p-4 rounded-lg border-2 transition-all hover:scale-105 ${
+                className={`p-3 sm:p-4 rounded-lg border-2 transition-all hover:scale-105 ${
                   selectedCategory === category.id
                     ? 'border-primary bg-primary/5'
                     : 'border-border hover:border-primary/50'
                 }`}
               >
                 <div
-                  className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center mx-auto mb-2`}
+                  className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${category.color} flex items-center justify-center mx-auto mb-1 sm:mb-2`}
                 >
-                  <Icon name={category.icon as any} size={24} />
+                  <Icon name={category.icon as any} size={20} className="sm:w-6 sm:h-6" />
                 </div>
-                <p className="text-sm font-medium text-center">{category.name}</p>
+                <p className="text-xs sm:text-sm font-medium text-center">{category.name}</p>
               </button>
             ))}
           </div>
         </div>
 
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
+        <div className="mb-4 sm:mb-6 flex items-center justify-between">
+          <h2 className="text-lg sm:text-xl font-semibold">
             {showFavorites
               ? 'Избранное'
               : selectedCategory
               ? categories.find((c) => c.id === selectedCategory)?.name
               : 'Все объявления'}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Найдено: {filteredListings.length}
+          <p className="text-xs sm:text-sm text-muted-foreground">
+            {filteredListings.length}
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 animate-fade-in">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 animate-fade-in">
           {filteredListings.map((listing) => (
             <Card
               key={listing.id}
@@ -1232,25 +1232,25 @@ const Index = () => {
               onClick={() => setSelectedListing(listing)}
             >
               {listing.isVip && (
-                <Badge className="absolute top-2 left-2 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs px-1.5 py-0.5">
-                  <Icon name="Crown" size={10} className="mr-0.5" />
+                <Badge className="absolute top-1 sm:top-2 left-1 sm:left-2 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5">
+                  <Icon name="Crown" size={8} className="mr-0.5 sm:w-2.5 sm:h-2.5" />
                   VIP
                 </Badge>
               )}
               {listing.boostedAt && (
-                <Badge className="absolute top-2 left-2 z-10 bg-blue-500 text-white text-xs px-1.5 py-0.5">
-                  <Icon name="TrendingUp" size={10} className="mr-0.5" />
+                <Badge className="absolute top-1 sm:top-2 left-1 sm:left-2 z-10 bg-blue-500 text-white text-[10px] sm:text-xs px-1 sm:px-1.5 py-0.5">
+                  <Icon name="TrendingUp" size={8} className="mr-0.5 sm:w-2.5 sm:h-2.5" />
                   ТОП
                 </Badge>
               )}
               <button
                 onClick={(e) => toggleFavorite(listing.id, e)}
-                className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 transition-all hover:scale-110 shadow-md"
+                className="absolute top-1 sm:top-2 right-1 sm:right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1 sm:p-1.5 transition-all hover:scale-110 shadow-md"
               >
                 <Icon
                   name="Heart"
-                  size={14}
-                  className={favorites.includes(listing.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
+                  size={12}
+                  className={`sm:w-3.5 sm:h-3.5 ${favorites.includes(listing.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}`}
                 />
               </button>
               
@@ -1283,31 +1283,31 @@ const Index = () => {
                   )}
                 </div>
 
-                <div className="p-3 bg-white/95">
-                  <h3 className="font-semibold text-sm mb-1 line-clamp-1">{listing.title}</h3>
+                <div className="p-2 sm:p-3 bg-white/95">
+                  <h3 className="font-semibold text-xs sm:text-sm mb-1 line-clamp-1">{listing.title}</h3>
                   
-                  <div className="flex items-center text-xs text-muted-foreground mb-2">
-                    <Icon name="MapPin" size={10} className="mr-0.5" />
+                  <div className="flex items-center text-[10px] sm:text-xs text-muted-foreground mb-1 sm:mb-2">
+                    <Icon name="MapPin" size={8} className="mr-0.5 sm:w-2.5 sm:h-2.5" />
                     <span className="line-clamp-1">{listing.location}</span>
                   </div>
 
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
                       <div className="flex items-center gap-0.5">
-                        <span className="text-xs">👍</span>
-                        <span className="text-xs font-medium text-green-600">{listing.likes}</span>
+                        <span className="text-[10px] sm:text-xs">👍</span>
+                        <span className="text-[10px] sm:text-xs font-medium text-green-600">{listing.likes}</span>
                       </div>
                       <div className="flex items-center gap-0.5">
-                        <span className="text-xs">👎</span>
-                        <span className="text-xs font-medium text-red-600">{listing.dislikes}</span>
+                        <span className="text-[10px] sm:text-xs">👎</span>
+                        <span className="text-[10px] sm:text-xs font-medium text-red-600">{listing.dislikes}</span>
                       </div>
                       <div className="flex items-center gap-0.5">
-                        <Icon name="MessageCircle" size={10} className="text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">{listing.commentsCount}</span>
+                        <Icon name="MessageCircle" size={8} className="text-muted-foreground sm:w-2.5 sm:h-2.5" />
+                        <span className="text-[10px] sm:text-xs text-muted-foreground">{listing.commentsCount}</span>
                       </div>
                     </div>
                   </div>
-                  <span className="text-xs font-semibold text-primary block">{listing.price}</span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-primary block">{listing.price}</span>
                 </div>
               </div>
             </Card>
@@ -1325,7 +1325,7 @@ const Index = () => {
       </main>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle className="text-2xl">Создать объявление</DialogTitle>
           </DialogHeader>
@@ -1530,7 +1530,7 @@ const Index = () => {
       </Dialog>
 
       <Dialog open={!!editingListing} onOpenChange={() => setEditingListing(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle className="text-2xl">Редактировать объявление</DialogTitle>
           </DialogHeader>
@@ -1738,13 +1738,13 @@ const Index = () => {
         setSelectedListing(null);
         setCurrentPhotoIndex(0);
       }}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">{selectedListing?.title}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="relative h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
+            <div className="relative h-64 sm:h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
               {selectedListing?.photos && selectedListing.photos.length > 0 ? (
                 <>
                   <img
@@ -1798,7 +1798,7 @@ const Index = () => {
               )}
             </div>
 
-            <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
                 {selectedListing?.isVip && (
                   <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
@@ -1827,8 +1827,8 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border rounded-lg p-4 bg-muted/30">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border rounded-lg p-3 sm:p-4 bg-muted/30 gap-3">
+              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Button
                     variant={userVotes[selectedListing?.id] === 'like' ? 'default' : 'outline'}
@@ -1940,7 +1940,7 @@ const Index = () => {
             )}
 
             {selectedListing?.ownerId === currentUserId && (
-              <div className="flex gap-2 pt-2 border-t">
+              <div className="flex flex-wrap gap-2 pt-2 border-t">
                 {!selectedListing?.isVip && (
                   <Button
                     variant="outline"
@@ -1982,7 +1982,7 @@ const Index = () => {
             )}
 
             <div className="pt-4 border-t">
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 sm:mb-6 gap-3">
                 <h3 className="text-lg font-semibold">Комментарии</h3>
                 <Button 
                   onClick={() => setShowCommentDialog(true)} 
@@ -1995,7 +1995,7 @@ const Index = () => {
                 </Button>
               </div>
 
-              <div className="space-y-4 max-h-[300px] overflow-y-auto mb-6">
+              <div className="space-y-4 max-h-[200px] sm:max-h-[300px] overflow-y-auto mb-6">
                 {comments[selectedListing?.id]?.length > 0 ? (
                   comments[selectedListing?.id].map((comment: any) => (
                     <div key={comment.id} className="border-b pb-4 last:border-0">
@@ -2046,8 +2046,8 @@ const Index = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between border-t pt-4">
-                <span className="text-2xl font-bold text-primary">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-t pt-4 gap-3">
+                <span className="text-xl sm:text-2xl font-bold text-primary">
                   {selectedListing?.price}
                 </span>
                 <Button size="lg">
@@ -2061,7 +2061,7 @@ const Index = () => {
       </Dialog>
 
       <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle className="text-2xl">Оставить комментарий</DialogTitle>
           </DialogHeader>
@@ -2110,7 +2110,7 @@ const Index = () => {
       </Dialog>
 
       <Dialog open={!!editingComment} onOpenChange={() => setEditingComment(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle className="text-2xl">Редактировать комментарий</DialogTitle>
           </DialogHeader>
@@ -2145,7 +2145,7 @@ const Index = () => {
       </Dialog>
 
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle className="text-2xl">
               {paymentType === 'vip' 
@@ -2268,7 +2268,7 @@ const Index = () => {
       </Dialog>
 
       <Dialog open={showPrivatePhotos} onOpenChange={setShowPrivatePhotos}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl w-[95vw] sm:w-full max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <DialogTitle className="text-2xl flex items-center gap-2">
               <Icon name="Lock" size={24} className="text-primary" />
@@ -2276,7 +2276,7 @@ const Index = () => {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="relative h-[600px] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
+          <div className="relative h-[60vh] sm:h-[70vh] md:h-[600px] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
             {selectedListing?.privatePhotos && selectedListing.privatePhotos.length > 0 && (
               <>
                 <img
@@ -2290,19 +2290,19 @@ const Index = () => {
                       onClick={() => setCurrentPhotoIndex((prev) => 
                         prev === 0 ? selectedListing.privatePhotos.length - 1 : prev - 1
                       )}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
+                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-colors"
                     >
-                      <Icon name="ChevronLeft" size={32} />
+                      <Icon name="ChevronLeft" size={24} className="sm:w-8 sm:h-8" />
                     </button>
                     <button
                       onClick={() => setCurrentPhotoIndex((prev) => 
                         prev === selectedListing.privatePhotos.length - 1 ? 0 : prev + 1
                       )}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-3 transition-colors"
                     >
-                      <Icon name="ChevronRight" size={32} />
+                      <Icon name="ChevronRight" size={24} className="sm:w-8 sm:h-8" />
                     </button>
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                    <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
                       {selectedListing.privatePhotos.map((_: string, index: number) => (
                         <button
                           key={index}
@@ -2315,7 +2315,7 @@ const Index = () => {
                         />
                       ))}
                     </div>
-                    <div className="absolute top-4 right-4 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-medium">
+                    <div className="absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/50 text-white px-2 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium">
                       {currentPhotoIndex + 1} / {selectedListing.privatePhotos.length}
                     </div>
                   </>
