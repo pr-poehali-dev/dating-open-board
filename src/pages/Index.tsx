@@ -232,6 +232,7 @@ const Index = () => {
   const [messageRecipient, setMessageRecipient] = useState<any>(null);
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<{[key: number]: any[]}>({});
+  const [unreadMessages, setUnreadMessages] = useState<{[key: number]: number}>({});
   const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
   const [showBlockedSection, setShowBlockedSection] = useState(false);
   const { toast } = useToast();
@@ -896,6 +897,43 @@ const Index = () => {
     }
   };
 
+  const getTotalUnreadMessages = () => {
+    return Object.values(unreadMessages).reduce((sum, count) => sum + count, 0);
+  };
+
+  const markMessagesAsRead = (listingId: number) => {
+    setUnreadMessages(prev => {
+      const newUnread = { ...prev };
+      delete newUnread[listingId];
+      return newUnread;
+    });
+  };
+
+  const simulateIncomingMessage = (listingId: number) => {
+    setTimeout(() => {
+      const incomingMsg = {
+        text: 'Привет! Спасибо за интерес. Доступен для встречи.',
+        fromMe: false,
+        time: new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages(prev => ({
+        ...prev,
+        [listingId]: [...(prev[listingId] || []), incomingMsg],
+      }));
+      
+      if (!showMessagesDialog || messageRecipient?.id !== listingId) {
+        setUnreadMessages(prev => ({
+          ...prev,
+          [listingId]: (prev[listingId] || 0) + 1,
+        }));
+        toast({
+          title: 'Новое сообщение',
+          description: 'Вам пришло новое сообщение',
+        });
+      }
+    }, 3000 + Math.random() * 3000);
+  };
+
   const filteredListings = listings
     .filter((listing) => {
       // Скрываем заблокированных пользователей из основного списка
@@ -1042,6 +1080,22 @@ const Index = () => {
                   </Badge>
                 )}
               </Button>
+              {getTotalUnreadMessages() > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="relative h-8 sm:h-9 px-2 sm:px-3"
+                >
+                  <Icon name="MessageSquare" size={14} className="sm:mr-2" />
+                  <span className="hidden sm:inline">Сообщения</span>
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 sm:ml-2 bg-red-500 text-white h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center rounded-full text-[10px] sm:text-xs animate-pulse"
+                  >
+                    {getTotalUnreadMessages()}
+                  </Badge>
+                </Button>
+              )}
               <Button onClick={() => setShowCreateDialog(true)} size="sm" className="h-8 sm:h-9 px-2 sm:px-3">
                 <Icon name="Plus" size={14} className="sm:mr-2" />
                 <span className="hidden sm:inline">Разместить</span>
@@ -2526,11 +2580,19 @@ const Index = () => {
                       setMessageRecipient(selectedListing);
                       setShowMessagesDialog(true);
                     }}
-                    className="flex-1 sm:flex-none"
+                    className="flex-1 sm:flex-none relative"
                     size="sm"
                   >
                     <Icon name="MessageSquare" size={16} className="mr-2" />
                     Написать
+                    {unreadMessages[selectedListing?.id] > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="ml-2 bg-red-500 text-white h-5 w-5 p-0 flex items-center justify-center rounded-full text-xs"
+                      >
+                        {unreadMessages[selectedListing?.id]}
+                      </Badge>
+                    )}
                   </Button>
                   <Button
                     onClick={() => handleBlockUser(selectedListing.id)}
@@ -3106,7 +3168,12 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={showMessagesDialog} onOpenChange={setShowMessagesDialog}>
+      <Dialog open={showMessagesDialog} onOpenChange={(open) => {
+        if (open && messageRecipient) {
+          markMessagesAsRead(messageRecipient.id);
+        }
+        setShowMessagesDialog(open);
+      }}>
         <DialogContent className="max-w-2xl w-[95vw] sm:w-full max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl flex items-center gap-2">
@@ -3168,6 +3235,7 @@ const Index = () => {
                         [messageRecipient?.id]: [...(messages[messageRecipient?.id] || []), msg],
                       });
                       setNewMessage('');
+                      simulateIncomingMessage(messageRecipient?.id);
                       toast({
                         title: 'Отправлено',
                         description: 'Ваше сообщение доставлено',
@@ -3190,6 +3258,7 @@ const Index = () => {
                       [messageRecipient?.id]: [...(messages[messageRecipient?.id] || []), msg],
                     });
                     setNewMessage('');
+                    simulateIncomingMessage(messageRecipient?.id);
                     toast({
                       title: 'Отправлено',
                       description: 'Ваше сообщение доставлено',
