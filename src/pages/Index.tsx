@@ -25,6 +25,7 @@ const categories = [
   { id: 'sex', name: 'Секс знакомства', icon: 'Heart', color: 'bg-pink-100 text-pink-700' },
   { id: 'escort', name: 'Эскорт', icon: 'User', color: 'bg-purple-100 text-purple-700' },
   { id: 'couples', name: 'Пары МЖ', icon: 'Users2', color: 'bg-rose-100 text-rose-700' },
+  { id: 'massage', name: 'Массаж', icon: 'Hand', color: 'bg-teal-100 text-teal-700' },
   { id: 'rent', name: 'Аренда', icon: 'Home', color: 'bg-blue-100 text-blue-700' },
   { id: 'tourism', name: 'Туризм', icon: 'MapPin', color: 'bg-green-100 text-green-700' },
   { id: 'fetish', name: 'Фетиш', icon: 'Star', color: 'bg-orange-100 text-orange-700' },
