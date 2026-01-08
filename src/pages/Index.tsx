@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import AppInfo from '@/components/AppInfo';
+import NotificationBadge from '@/components/NotificationBadge';
 
 const categories = [
   { id: 'sex', name: 'Секс знакомства', icon: 'Heart', color: 'bg-pink-100 text-pink-700' },
@@ -228,6 +229,8 @@ const Index = () => {
     bodyType: '',
     orientation: '',
     role: '',
+    priceFrom: '',
+    priceTo: '',
   });
   const [showMessagesDialog, setShowMessagesDialog] = useState(false);
   const [messageRecipient, setMessageRecipient] = useState<any>(null);
@@ -236,6 +239,8 @@ const Index = () => {
   const [unreadMessages, setUnreadMessages] = useState<{[key: number]: number}>({});
   const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
   const [showBlockedSection, setShowBlockedSection] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -245,6 +250,20 @@ const Index = () => {
   useEffect(() => {
     localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
   }, [searchHistory]);
+
+  const addNotification = (message: string, type: 'message' | 'access' | 'favorite' | 'comment') => {
+    const notif = {
+      id: Date.now(),
+      message,
+      type,
+      timestamp: Date.now(),
+    };
+    setNotifications(prev => [...prev, notif]);
+  };
+
+  const dismissNotification = (id: number) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   const handleSearchSubmit = (query: string) => {
     if (query.trim() && !searchHistory.includes(query.trim())) {
@@ -594,6 +613,13 @@ const Index = () => {
           ? 'Объявление сохранено в ваших избранных'
           : 'Объявление удалено из избранных',
       });
+
+      if (isAdded) {
+        const listing = listings.find(l => l.id === listingId);
+        if (listing) {
+          addNotification(`${listing.title} добавлено в избранное`, 'favorite');
+        }
+      }
       
       return newFavorites;
     });
@@ -871,6 +897,8 @@ const Index = () => {
       bodyType: '',
       orientation: '',
       role: '',
+      priceFrom: '',
+      priceTo: '',
     });
     toast({
       title: 'Фильтры сброшены',
@@ -999,7 +1027,19 @@ const Index = () => {
         if (filters.role && profile.role) {
           if (profile.role !== filters.role) matchesFilters = false;
         }
-      } else if (hasActiveFilters() && !listing.profile) {
+      }
+
+      // Фильтр по цене (работает всегда, не только для профилей)
+      if (filters.priceFrom || filters.priceTo) {
+        const priceMatch = listing.price.match(/\d+/);
+        if (priceMatch) {
+          const price = parseInt(priceMatch[0]);
+          if (filters.priceFrom && price < parseInt(filters.priceFrom)) matchesFilters = false;
+          if (filters.priceTo && price > parseInt(filters.priceTo)) matchesFilters = false;
+        }
+      }
+
+      if (hasActiveFilters() && !listing.profile && (filters.ageFrom || filters.ageTo || filters.weightFrom || filters.weightTo || filters.heightFrom || filters.heightTo || filters.bodyType || filters.orientation || filters.role)) {
         // Если фильтры активны, но у объявления нет профиля - не показываем
         matchesFilters = false;
       }
@@ -1021,11 +1061,28 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <NotificationBadge notifications={notifications} onDismiss={dismissNotification} />
+      
       <header className="border-b sticky top-0 bg-white/80 backdrop-blur-md z-10">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h1 className="text-xl sm:text-2xl font-bold text-primary">МойДосуг</h1>
-            <div className="flex items-center gap-1 sm:gap-2">
+            
+            {/* Бургер-меню для мобильных */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="sm:hidden relative"
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
+            >
+              <Icon name={showMobileMenu ? "X" : "Menu"} size={24} />
+              {(blockedUsers.length > 0 || favorites.length > 0 || getTotalUnreadMessages() > 0 || getPendingRequests() > 0) && !showMobileMenu && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
+            </Button>
+
+            {/* Десктопное меню */}
+            <div className="hidden sm:flex items-center gap-1 sm:gap-2">
               <AppInfo />
               <Button
                 onClick={() => {
@@ -1215,6 +1272,125 @@ const Index = () => {
           </div>
         </div>
       </header>
+
+      {/* Мобильное меню */}
+      {showMobileMenu && (
+        <>
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 sm:hidden" 
+            onClick={() => setShowMobileMenu(false)}
+          />
+          <div className="fixed top-[72px] right-0 left-0 bg-white border-b shadow-lg z-50 sm:hidden animate-slide-in">
+            <div className="container mx-auto px-4 py-4">
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => {
+                    setShowBlockedSection(!showBlockedSection);
+                    setShowFavorites(false);
+                    setShowProfile(false);
+                    setShowFilters(false);
+                    setSelectedCategory(null);
+                    setShowMobileMenu(false);
+                  }}
+                  variant={showBlockedSection ? 'default' : 'outline'}
+                  size="sm"
+                  className="relative justify-start"
+                >
+                  <Icon name="Ban" size={16} className="mr-2" />
+                  Чёрный список
+                  {blockedUsers.length > 0 && (
+                    <Badge className="ml-auto bg-red-500 text-white">
+                      {blockedUsers.length}
+                    </Badge>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    setShowFilters(!showFilters);
+                    setShowMobileMenu(false);
+                  }}
+                  variant={showFilters ? 'default' : 'outline'}
+                  size="sm"
+                  className="relative justify-start"
+                >
+                  <Icon name="Filter" size={16} className="mr-2" />
+                  Фильтры
+                  {hasActiveFilters() && (
+                    <Badge className="ml-auto bg-primary text-white">
+                      {Object.values(filters).filter(v => v !== '').length}
+                    </Badge>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    setShowFavorites(!showFavorites);
+                    setShowMobileMenu(false);
+                  }}
+                  variant={showFavorites ? 'default' : 'outline'}
+                  size="sm"
+                  className="relative justify-start"
+                >
+                  <Icon name="Heart" size={16} className="mr-2" />
+                  Избранное
+                  {favorites.length > 0 && (
+                    <Badge className="ml-auto bg-red-500 text-white">
+                      {favorites.length}
+                    </Badge>
+                  )}
+                </Button>
+
+                {getTotalUnreadMessages() > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="relative justify-start"
+                    onClick={() => setShowMobileMenu(false)}
+                  >
+                    <Icon name="MessageSquare" size={16} className="mr-2" />
+                    Сообщения
+                    <Badge className="ml-auto bg-red-500 text-white animate-pulse">
+                      {getTotalUnreadMessages()}
+                    </Badge>
+                  </Button>
+                )}
+
+                <Button 
+                  onClick={() => {
+                    setShowCreateDialog(true);
+                    setShowMobileMenu(false);
+                  }} 
+                  size="sm"
+                  className="justify-start"
+                >
+                  <Icon name="Plus" size={16} className="mr-2" />
+                  Разместить
+                </Button>
+
+                <Button
+                  variant={showProfile ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setShowProfile(!showProfile);
+                    setShowMobileMenu(false);
+                  }}
+                  className="relative justify-start"
+                >
+                  <Icon name="User" size={16} className="mr-2" />
+                  Кабинет
+                  {(myListings.length > 0 || getPendingRequests() > 0) && (
+                    <Badge className="ml-auto bg-primary text-white">
+                      {myListings.length}
+                      {getPendingRequests() > 0 && ` (${getPendingRequests()})`}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <main className="container mx-auto px-4 py-8">
         {showProfile ? (
@@ -1591,6 +1767,27 @@ const Index = () => {
                     <SelectItem value="Не указано">Не указано</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label className="text-xs text-muted-foreground mb-2 block">Цена (₽)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="От"
+                    value={filters.priceFrom}
+                    onChange={(e) => setFilters({ ...filters, priceFrom: e.target.value })}
+                    className="h-9"
+                  />
+                  <span className="text-muted-foreground">—</span>
+                  <Input
+                    type="number"
+                    placeholder="До"
+                    value={filters.priceTo}
+                    onChange={(e) => setFilters({ ...filters, priceTo: e.target.value })}
+                    className="h-9"
+                  />
+                </div>
               </div>
             </div>
 

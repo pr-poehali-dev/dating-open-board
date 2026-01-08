@@ -69,7 +69,7 @@ const ListingsGrid = ({
                 ? 'bg-gradient-to-br from-yellow-100 to-orange-100'
                 : 'bg-gradient-to-br from-primary/20 to-primary/5'
             }`}>
-              {showBlockedSection && blockedUsers.includes(listing.ownerId) && (
+              {showBlockedSection && listing.ownerId && blockedUsers.includes(listing.ownerId) && (
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30">
                   <Icon name="Ban" size={48} className="text-red-500 mb-2" />
                   <span className="text-white text-xs font-semibold">Заблокирован</span>
@@ -156,7 +156,7 @@ const ListingsGrid = ({
                 </div>
               </div>
               <span className="text-[10px] sm:text-xs font-semibold text-primary block">{listing.price}</span>
-              {showBlockedSection && blockedUsers.includes(listing.ownerId) && (
+              {showBlockedSection && listing.ownerId && blockedUsers.includes(listing.ownerId) && (
                 <Button
                   variant="outline"
                   size="sm"
