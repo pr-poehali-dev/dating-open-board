@@ -118,8 +118,10 @@ const Index = () => {
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
   const [listings, setListings] = useState(mockListings);
   const [reviews, setReviews] = useState<any>(mockReviews);
+  const [favorites, setFavorites] = useState<number[]>([]);
   const { toast } = useToast();
 
   const [newListing, setNewListing] = useState({
@@ -216,13 +218,36 @@ const Index = () => {
     });
   };
 
+  const toggleFavorite = (listingId: number, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    
+    setFavorites((prev) => {
+      const isAdded = !prev.includes(listingId);
+      const newFavorites = isAdded
+        ? [...prev, listingId]
+        : prev.filter((id) => id !== listingId);
+      
+      toast({
+        title: isAdded ? 'Добавлено в избранное' : 'Удалено из избранного',
+        description: isAdded
+          ? 'Объявление сохранено в ваших избранных'
+          : 'Объявление удалено из избранных',
+      });
+      
+      return newFavorites;
+    });
+  };
+
   const filteredListings = listings.filter((listing) => {
     const matchesCategory = !selectedCategory || listing.category === selectedCategory;
     const matchesSearch =
       !searchQuery ||
       listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       listing.location.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    const matchesFavorites = !showFavorites || favorites.includes(listing.id);
+    return matchesCategory && matchesSearch && matchesFavorites;
   });
 
   const getCategoryIcon = (categoryId: string) => {
@@ -236,6 +261,23 @@ const Index = () => {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-primary">МойДосуг</h1>
             <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setShowFavorites(!showFavorites)}
+                variant={showFavorites ? 'default' : 'outline'}
+                size="sm"
+                className="relative"
+              >
+                <Icon name="Heart" size={16} className="mr-2" />
+                Избранное
+                {favorites.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-2 bg-red-500 text-white h-5 w-5 p-0 flex items-center justify-center rounded-full"
+                  >
+                    {favorites.length}
+                  </Badge>
+                )}
+              </Button>
               <Button onClick={() => setShowCreateDialog(true)} size="sm">
                 <Icon name="Plus" size={16} className="mr-2" />
                 Разместить
@@ -294,7 +336,9 @@ const Index = () => {
 
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-semibold">
-            {selectedCategory
+            {showFavorites
+              ? 'Избранное'
+              : selectedCategory
               ? categories.find((c) => c.id === selectedCategory)?.name
               : 'Все объявления'}
           </h2>
@@ -307,9 +351,19 @@ const Index = () => {
           {filteredListings.map((listing) => (
             <Card
               key={listing.id}
-              className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-[1.02]"
+              className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-[1.02] relative"
               onClick={() => setSelectedListing(listing)}
             >
+              <button
+                onClick={(e) => toggleFavorite(listing.id, e)}
+                className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 transition-all hover:scale-110 shadow-md"
+              >
+                <Icon
+                  name="Heart"
+                  size={20}
+                  className={favorites.includes(listing.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
+                />
+              </button>
               <div className="h-48 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
                 <Icon
                   name={getCategoryIcon(listing.category) as any}
@@ -479,9 +533,25 @@ const Index = () => {
               </div>
             </div>
 
-            <div className="flex items-center text-muted-foreground">
-              <Icon name="MapPin" size={18} className="mr-2" />
-              {selectedListing?.location}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center text-muted-foreground">
+                <Icon name="MapPin" size={18} className="mr-2" />
+                {selectedListing?.location}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleFavorite(selectedListing?.id);
+                }}
+              >
+                <Icon
+                  name="Heart"
+                  size={20}
+                  className={favorites.includes(selectedListing?.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
+                />
+              </Button>
             </div>
 
             <p className="text-foreground leading-relaxed">
