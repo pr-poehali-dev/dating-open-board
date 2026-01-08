@@ -72,6 +72,7 @@ const mockListings = [
     ownerId: 1,
     protectionEnabled: false,
     photos: [],
+    privatePhotos: [],
   },
   {
     id: 2,
@@ -89,6 +90,7 @@ const mockListings = [
     ownerId: 1,
     protectionEnabled: false,
     photos: [],
+    privatePhotos: [],
   },
   {
     id: 3,
@@ -106,6 +108,7 @@ const mockListings = [
     ownerId: 2,
     protectionEnabled: false,
     photos: [],
+    privatePhotos: [],
   },
   {
     id: 4,
@@ -123,6 +126,7 @@ const mockListings = [
     ownerId: 2,
     protectionEnabled: false,
     photos: [],
+    privatePhotos: [],
   },
   {
     id: 5,
@@ -140,6 +144,7 @@ const mockListings = [
     ownerId: 2,
     protectionEnabled: false,
     photos: [],
+    privatePhotos: [],
   },
   {
     id: 6,
@@ -157,6 +162,7 @@ const mockListings = [
     ownerId: 2,
     protectionEnabled: false,
     photos: [],
+    privatePhotos: [],
   },
 ];
 
@@ -185,6 +191,10 @@ const Index = () => {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [userVotes, setUserVotes] = useState<{[key: number]: 'like' | 'dislike'}>({});
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [photoAccessRequests, setPhotoAccessRequests] = useState<{[key: number]: number[]}>({});
+  const [grantedAccess, setGrantedAccess] = useState<{[key: number]: number[]}>({});
+  const [showPrivatePhotos, setShowPrivatePhotos] = useState(false);
+  const [showAccessRequestDialog, setShowAccessRequestDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -251,6 +261,7 @@ const Index = () => {
     description: '',
     price: '',
     photos: [] as string[],
+    privatePhotos: [] as string[],
   });
 
   const [newComment, setNewComment] = useState({
@@ -280,6 +291,7 @@ const Index = () => {
       ownerId: currentUserId,
       protectionEnabled: false,
       photos: newListing.photos || [],
+      privatePhotos: newListing.privatePhotos || [],
     };
 
     setListings([listing, ...listings]);
@@ -291,6 +303,7 @@ const Index = () => {
       description: '',
       price: '',
       photos: [],
+      privatePhotos: [],
     });
 
     toast({
@@ -513,11 +526,84 @@ const Index = () => {
     });
   };
 
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>, isEditing: boolean = false) => {
+  const handleRequestPhotoAccess = () => {
+    if (!selectedListing || selectedListing.ownerId === currentUserId) return;
+
+    const listingId = selectedListing.id;
+    const currentRequests = photoAccessRequests[listingId] || [];
+
+    if (currentRequests.includes(currentUserId)) {
+      toast({
+        title: 'Запрос уже отправлен',
+        description: 'Дождитесь ответа владельца',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setPhotoAccessRequests({
+      ...photoAccessRequests,
+      [listingId]: [...currentRequests, currentUserId],
+    });
+
+    toast({
+      title: 'Запрос отправлен',
+      description: 'Владелец получит уведомление о вашем запросе',
+    });
+  };
+
+  const handleGrantAccess = (listingId: number, userId: number) => {
+    const currentGranted = grantedAccess[listingId] || [];
+    
+    setGrantedAccess({
+      ...grantedAccess,
+      [listingId]: [...currentGranted, userId],
+    });
+
+    setPhotoAccessRequests({
+      ...photoAccessRequests,
+      [listingId]: (photoAccessRequests[listingId] || []).filter((id) => id !== userId),
+    });
+
+    toast({
+      title: 'Доступ предоставлен',
+      description: 'Пользователь теперь может видеть ваши приватные фото',
+    });
+  };
+
+  const handleRejectAccess = (listingId: number, userId: number) => {
+    setPhotoAccessRequests({
+      ...photoAccessRequests,
+      [listingId]: (photoAccessRequests[listingId] || []).filter((id) => id !== userId),
+    });
+
+    toast({
+      title: 'Запрос отклонён',
+    });
+  };
+
+  const hasAccessToPrivatePhotos = (listingId: number) => {
+    const listing = listings.find((l) => l.id === listingId);
+    if (!listing) return false;
+    if (listing.ownerId === currentUserId) return true;
+    return (grantedAccess[listingId] || []).includes(currentUserId);
+  };
+
+  const getPendingRequests = () => {
+    let total = 0;
+    myListings.forEach((listing) => {
+      total += (photoAccessRequests[listing.id] || []).length;
+    });
+    return total;
+  };
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>, isEditing: boolean = false, isPrivate: boolean = false) => {
     const files = event.target.files;
     if (!files) return;
 
-    const currentPhotos = isEditing ? (editingListing?.photos || []) : newListing.photos;
+    const currentPhotos = isPrivate 
+      ? (isEditing ? (editingListing?.privatePhotos || []) : newListing.privatePhotos)
+      : (isEditing ? (editingListing?.photos || []) : newListing.photos);
     
     if (currentPhotos.length + files.length > 10) {
       toast({
@@ -542,32 +628,60 @@ const Index = () => {
       reader.onloadend = () => {
         const base64String = reader.result as string;
         if (isEditing) {
-          setEditingListing({
-            ...editingListing,
-            photos: [...(editingListing?.photos || []), base64String],
-          });
+          if (isPrivate) {
+            setEditingListing({
+              ...editingListing,
+              privatePhotos: [...(editingListing?.privatePhotos || []), base64String],
+            });
+          } else {
+            setEditingListing({
+              ...editingListing,
+              photos: [...(editingListing?.photos || []), base64String],
+            });
+          }
         } else {
-          setNewListing({
-            ...newListing,
-            photos: [...newListing.photos, base64String],
-          });
+          if (isPrivate) {
+            setNewListing({
+              ...newListing,
+              privatePhotos: [...newListing.privatePhotos, base64String],
+            });
+          } else {
+            setNewListing({
+              ...newListing,
+              photos: [...newListing.photos, base64String],
+            });
+          }
         }
       };
       reader.readAsDataURL(file);
     });
   };
 
-  const handleDeletePhoto = (index: number, isEditing: boolean = false) => {
+  const handleDeletePhoto = (index: number, isEditing: boolean = false, isPrivate: boolean = false) => {
     if (isEditing) {
-      setEditingListing({
-        ...editingListing,
-        photos: editingListing?.photos?.filter((_: string, i: number) => i !== index) || [],
-      });
+      if (isPrivate) {
+        setEditingListing({
+          ...editingListing,
+          privatePhotos: editingListing?.privatePhotos?.filter((_: string, i: number) => i !== index) || [],
+        });
+      } else {
+        setEditingListing({
+          ...editingListing,
+          photos: editingListing?.photos?.filter((_: string, i: number) => i !== index) || [],
+        });
+      }
     } else {
-      setNewListing({
-        ...newListing,
-        photos: newListing.photos.filter((_, i) => i !== index),
-      });
+      if (isPrivate) {
+        setNewListing({
+          ...newListing,
+          privatePhotos: newListing.privatePhotos.filter((_, i) => i !== index),
+        });
+      } else {
+        setNewListing({
+          ...newListing,
+          photos: newListing.photos.filter((_, i) => i !== index),
+        });
+      }
     }
 
     toast({
@@ -663,6 +777,7 @@ const Index = () => {
                 variant={showProfile ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setShowProfile(!showProfile)}
+                className="relative"
               >
                 <Icon name="User" size={16} className="mr-2" />
                 Кабинет
@@ -670,6 +785,11 @@ const Index = () => {
                   <Badge variant="secondary" className="ml-2 bg-primary text-white h-5 w-5 p-0 flex items-center justify-center rounded-full">
                     {myListings.length}
                   </Badge>
+                )}
+                {getPendingRequests() > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
+                    {getPendingRequests()}
+                  </span>
                 )}
               </Button>
             </div>
@@ -793,6 +913,55 @@ const Index = () => {
               </Card>
             ) : (
               <div className="space-y-4">
+                {getPendingRequests() > 0 && (
+                  <Card className="p-6 bg-blue-50 border-blue-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Bell" size={20} className="text-blue-600" />
+                        <h3 className="font-semibold text-blue-900">Запросы доступа к приватным фото</h3>
+                      </div>
+                      <Badge className="bg-blue-600 text-white">{getPendingRequests()}</Badge>
+                    </div>
+                    <div className="space-y-3">
+                      {myListings.map((listing) => {
+                        const requests = photoAccessRequests[listing.id] || [];
+                        if (requests.length === 0) return null;
+                        return (
+                          <div key={listing.id} className="bg-white rounded-lg p-4">
+                            <p className="text-sm font-medium mb-3">
+                              Запросы к объявлению "{listing.title}"
+                            </p>
+                            <div className="space-y-2">
+                              {requests.map((userId) => (
+                                <div key={userId} className="flex items-center justify-between gap-3 p-2 bg-muted/50 rounded">
+                                  <span className="text-sm">Пользователь #{userId}</span>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleGrantAccess(listing.id, userId)}
+                                    >
+                                      <Icon name="Check" size={14} className="mr-1" />
+                                      Разрешить
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleRejectAccess(listing.id, userId)}
+                                    >
+                                      <Icon name="X" size={14} className="mr-1" />
+                                      Отклонить
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+
                 {myListings.map((listing) => (
                   <Card key={listing.id} className="p-6">
                     <div className="flex items-start justify-between gap-4">
@@ -1188,6 +1357,69 @@ const Index = () => {
               )}
             </div>
 
+            <div className="border-t pt-5">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <Label>🔒 Приватные фото (до 10 штук)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Доступ по запросу или обмену
+                  </p>
+                </div>
+                <Badge variant="secondary">
+                  {newListing.privatePhotos.length}/10
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                ⚠️ Разрешены только неинтимные фото: лицо, тело, ноги, спина. Интимный 18+ контент запрещён.
+              </p>
+
+              {newListing.privatePhotos.length > 0 && (
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  {newListing.privatePhotos.map((photo, index) => (
+                    <div key={index} className="relative aspect-square group">
+                      <div className="absolute inset-0 bg-black/10 rounded-lg flex items-center justify-center z-10 pointer-events-none">
+                        <Icon name="Lock" size={20} className="text-white drop-shadow-lg" />
+                      </div>
+                      <img
+                        src={photo}
+                        alt={`Приватное фото ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePhoto(index, false, true)}
+                        className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                      >
+                        <Icon name="X" size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {newListing.privatePhotos.length < 10 && (
+                <div>
+                  <input
+                    type="file"
+                    id="private-photo-upload"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handlePhotoUpload(e, false, true)}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('private-photo-upload')?.click()}
+                    className="w-full"
+                  >
+                    <Icon name="Lock" size={18} className="mr-2" />
+                    Загрузить приватные фото
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button onClick={handleCreateListing} className="flex-1">
                 <Icon name="Check" size={18} className="mr-2" />
@@ -1325,6 +1557,69 @@ const Index = () => {
                   >
                     <Icon name="Upload" size={18} className="mr-2" />
                     Загрузить фото
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t pt-5">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <Label>🔒 Приватные фото (до 10 штук)</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Доступ по запросу или обмену
+                  </p>
+                </div>
+                <Badge variant="secondary">
+                  {editingListing?.privatePhotos?.length || 0}/10
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                ⚠️ Разрешены только неинтимные фото: лицо, тело, ноги, спина. Интимный 18+ контент запрещён.
+              </p>
+
+              {editingListing?.privatePhotos && editingListing.privatePhotos.length > 0 && (
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  {editingListing.privatePhotos.map((photo: string, index: number) => (
+                    <div key={index} className="relative aspect-square group">
+                      <div className="absolute inset-0 bg-black/10 rounded-lg flex items-center justify-center z-10 pointer-events-none">
+                        <Icon name="Lock" size={20} className="text-white drop-shadow-lg" />
+                      </div>
+                      <img
+                        src={photo}
+                        alt={`Приватное фото ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePhoto(index, true, true)}
+                        className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                      >
+                        <Icon name="X" size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(!editingListing?.privatePhotos || editingListing.privatePhotos.length < 10) && (
+                <div>
+                  <input
+                    type="file"
+                    id="private-photo-upload-edit"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handlePhotoUpload(e, true, true)}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('private-photo-upload-edit')?.click()}
+                    className="w-full"
+                  >
+                    <Icon name="Lock" size={18} className="mr-2" />
+                    Загрузить приватные фото
                   </Button>
                 </div>
               )}
@@ -1492,6 +1787,65 @@ const Index = () => {
             <p className="text-foreground leading-relaxed">
               {selectedListing?.description}
             </p>
+
+            {selectedListing?.privatePhotos && selectedListing.privatePhotos.length > 0 && (
+              <div className="border rounded-lg p-4 bg-muted/20">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon name="Lock" size={18} className="text-primary" />
+                    <h3 className="font-semibold">Приватные фото ({selectedListing.privatePhotos.length})</h3>
+                  </div>
+                  {hasAccessToPrivatePhotos(selectedListing.id) && (
+                    <Badge className="bg-green-100 text-green-700">
+                      <Icon name="Check" size={12} className="mr-1" />
+                      Доступ открыт
+                    </Badge>
+                  )}
+                </div>
+
+                {hasAccessToPrivatePhotos(selectedListing.id) ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {selectedListing.privatePhotos.map((photo: string, index: number) => (
+                      <div key={index} className="relative aspect-square">
+                        <img
+                          src={photo}
+                          alt={`Приватное фото ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => {
+                            setCurrentPhotoIndex(index);
+                            setShowPrivatePhotos(true);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {selectedListing.privatePhotos.slice(0, 3).map((_: string, index: number) => (
+                        <div key={index} className="aspect-square bg-muted rounded-lg flex items-center justify-center">
+                          <Icon name="Lock" size={32} className="text-muted-foreground" />
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Закрытые фотографии. Отправьте запрос для получения доступа
+                    </p>
+                    {(photoAccessRequests[selectedListing.id] || []).includes(currentUserId) ? (
+                      <Badge variant="secondary">
+                        <Icon name="Clock" size={12} className="mr-1" />
+                        Запрос отправлен
+                      </Badge>
+                    ) : (
+                      <Button onClick={handleRequestPhotoAccess} variant="outline" size="sm">
+                        <Icon name="Unlock" size={14} className="mr-2" />
+                        Запросить доступ
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {selectedListing?.ownerId === currentUserId && (
               <div className="flex gap-2 pt-2 border-t">
@@ -1817,6 +2171,65 @@ const Index = () => {
                 Отмена
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showPrivatePhotos} onOpenChange={setShowPrivatePhotos}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <Icon name="Lock" size={24} className="text-primary" />
+              Приватные фотографии
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="relative h-[600px] bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
+            {selectedListing?.privatePhotos && selectedListing.privatePhotos.length > 0 && (
+              <>
+                <img
+                  src={selectedListing.privatePhotos[currentPhotoIndex]}
+                  alt={`Приватное фото ${currentPhotoIndex + 1}`}
+                  className="w-full h-full object-contain"
+                />
+                {selectedListing.privatePhotos.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setCurrentPhotoIndex((prev) => 
+                        prev === 0 ? selectedListing.privatePhotos.length - 1 : prev - 1
+                      )}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
+                    >
+                      <Icon name="ChevronLeft" size={32} />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPhotoIndex((prev) => 
+                        prev === selectedListing.privatePhotos.length - 1 ? 0 : prev + 1
+                      )}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition-colors"
+                    >
+                      <Icon name="ChevronRight" size={32} />
+                    </button>
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+                      {selectedListing.privatePhotos.map((_: string, index: number) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentPhotoIndex(index)}
+                          className={`w-2.5 h-2.5 rounded-full transition-all ${
+                            index === currentPhotoIndex
+                              ? 'bg-white w-8'
+                              : 'bg-white/50 hover:bg-white/75'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="absolute top-4 right-4 bg-black/50 text-white px-4 py-2 rounded-full text-sm font-medium">
+                      {currentPhotoIndex + 1} / {selectedListing.privatePhotos.length}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
