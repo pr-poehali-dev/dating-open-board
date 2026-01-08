@@ -31,6 +31,18 @@ const categories = [
   { id: 'bdsm', name: 'БДСМ', icon: 'Lock', color: 'bg-red-100 text-red-700' },
 ];
 
+const mockReviews: any = {
+  1: [
+    { id: 1, author: 'Александр', rating: 5, comment: 'Отличная встреча, всё на высшем уровне!', date: '2 дня назад' },
+    { id: 2, author: 'Дмитрий', rating: 5, comment: 'Очень приятная девушка, рекомендую', date: '5 дней назад' },
+    { id: 3, author: 'Михаил', rating: 4, comment: 'Хорошо, соответствует описанию', date: '1 неделю назад' },
+  ],
+  2: [
+    { id: 1, author: 'Иван', rating: 5, comment: 'Премиальный сервис, всё идеально', date: '1 день назад' },
+    { id: 2, author: 'Сергей', rating: 5, comment: 'Профессиональный подход, буду обращаться снова', date: '3 дня назад' },
+  ],
+};
+
 const mockListings = [
   {
     id: 1,
@@ -105,7 +117,9 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [listings, setListings] = useState(mockListings);
+  const [reviews, setReviews] = useState<any>(mockReviews);
   const { toast } = useToast();
 
   const [newListing, setNewListing] = useState({
@@ -114,6 +128,12 @@ const Index = () => {
     location: '',
     description: '',
     price: '',
+  });
+
+  const [newReview, setNewReview] = useState({
+    author: '',
+    rating: 5,
+    comment: '',
   });
 
   const handleCreateListing = () => {
@@ -147,6 +167,52 @@ const Index = () => {
     toast({
       title: 'Успешно!',
       description: 'Ваше объявление опубликовано',
+    });
+  };
+
+  const handleAddReview = () => {
+    if (!newReview.author || !newReview.comment) {
+      toast({
+        title: 'Ошибка',
+        description: 'Заполните все поля отзыва',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const listingId = selectedListing.id;
+    const review = {
+      id: (reviews[listingId]?.length || 0) + 1,
+      ...newReview,
+      date: 'Только что',
+    };
+
+    setReviews({
+      ...reviews,
+      [listingId]: [review, ...(reviews[listingId] || [])],
+    });
+
+    const updatedListings = listings.map((listing) => {
+      if (listing.id === listingId) {
+        const allReviews = [review, ...(reviews[listingId] || [])];
+        const avgRating = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
+        return {
+          ...listing,
+          rating: Math.round(avgRating * 10) / 10,
+          reviews: allReviews.length,
+        };
+      }
+      return listing;
+    });
+
+    setListings(updatedListings);
+    setSelectedListing(updatedListings.find((l) => l.id === listingId));
+    setShowReviewDialog(false);
+    setNewReview({ author: '', rating: 5, comment: '' });
+
+    toast({
+      title: 'Спасибо!',
+      description: 'Ваш отзыв опубликован',
     });
   };
 
@@ -422,13 +488,127 @@ const Index = () => {
               {selectedListing?.description}
             </p>
 
-            <div className="pt-4 border-t flex items-center justify-between">
-              <span className="text-2xl font-bold text-primary">
-                {selectedListing?.price}
-              </span>
-              <Button size="lg">
-                <Icon name="MessageCircle" size={18} className="mr-2" />
-                Написать
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">Отзывы</h3>
+                <Button onClick={() => setShowReviewDialog(true)} variant="outline" size="sm">
+                  <Icon name="MessageSquarePlus" size={16} className="mr-2" />
+                  Оставить отзыв
+                </Button>
+              </div>
+
+              <div className="space-y-4 max-h-[300px] overflow-y-auto mb-6">
+                {reviews[selectedListing?.id]?.length > 0 ? (
+                  reviews[selectedListing?.id].map((review: any) => (
+                    <div key={review.id} className="border-b pb-4 last:border-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">{review.author}</span>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Icon
+                              key={i}
+                              name="Star"
+                              size={14}
+                              className={
+                                i < review.rating
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-gray-300'
+                              }
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-1">{review.comment}</p>
+                      <span className="text-xs text-muted-foreground">{review.date}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">
+                    Пока нет отзывов. Будьте первым!
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between border-t pt-4">
+                <span className="text-2xl font-bold text-primary">
+                  {selectedListing?.price}
+                </span>
+                <Button size="lg">
+                  <Icon name="MessageCircle" size={18} className="mr-2" />
+                  Написать
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Оставить отзыв</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div>
+              <Label htmlFor="author">Ваше имя *</Label>
+              <Input
+                id="author"
+                placeholder="Например: Александр"
+                value={newReview.author}
+                onChange={(e) => setNewReview({ ...newReview, author: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div>
+              <Label>Оценка *</Label>
+              <div className="flex items-center gap-2 mt-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setNewReview({ ...newReview, rating: star })}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Icon
+                      name="Star"
+                      size={32}
+                      className={
+                        star <= newReview.rating
+                          ? 'text-yellow-500 fill-yellow-500'
+                          : 'text-gray-300'
+                      }
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="comment">Комментарий *</Label>
+              <Textarea
+                id="comment"
+                placeholder="Расскажите о вашем опыте"
+                value={newReview.comment}
+                onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                className="mt-1.5 min-h-[120px]"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleAddReview} className="flex-1">
+                <Icon name="Send" size={18} className="mr-2" />
+                Отправить
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowReviewDialog(false);
+                  setNewReview({ author: '', rating: 5, comment: '' });
+                }}
+                className="flex-1"
+              >
+                Отмена
               </Button>
             </div>
           </div>
