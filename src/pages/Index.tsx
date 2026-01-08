@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -136,7 +136,14 @@ const Index = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [editingListing, setEditingListing] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return localStorage.getItem('searchQuery') || '';
+  });
+  const [searchHistory, setSearchHistory] = useState<string[]>(() => {
+    const saved = localStorage.getItem('searchHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
@@ -147,6 +154,31 @@ const Index = () => {
   const [reviews, setReviews] = useState<any>(mockReviews);
   const [favorites, setFavorites] = useState<number[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    localStorage.setItem('searchQuery', searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+  }, [searchHistory]);
+
+  const handleSearchSubmit = (query: string) => {
+    if (query.trim() && !searchHistory.includes(query.trim())) {
+      setSearchHistory([query.trim(), ...searchHistory].slice(0, 10));
+    }
+    setShowSearchHistory(false);
+  };
+
+  const handleSearchHistoryClick = (historyItem: string) => {
+    setSearchQuery(historyItem);
+    setShowSearchHistory(false);
+  };
+
+  const clearSearchHistory = () => {
+    setSearchHistory([]);
+    localStorage.removeItem('searchHistory');
+  };
 
   const [newListing, setNewListing] = useState({
     title: '',
@@ -399,14 +431,59 @@ const Index = () => {
             <Icon
               name="Search"
               size={20}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground z-10"
             />
             <Input
               placeholder="Поиск по объявлениям..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              onFocus={() => setShowSearchHistory(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchSubmit(searchQuery);
+                }
+              }}
+              className="pl-10 pr-10"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
+              >
+                <Icon name="X" size={16} />
+              </button>
+            )}
+            
+            {showSearchHistory && searchHistory.length > 0 && (
+              <>
+                <div 
+                  className="fixed inset-0 z-20" 
+                  onClick={() => setShowSearchHistory(false)}
+                />
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-30 max-h-64 overflow-y-auto">
+                  <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
+                    <span className="text-sm font-medium text-muted-foreground">История поиска</span>
+                    <button
+                      onClick={clearSearchHistory}
+                      className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      Очистить
+                    </button>
+                  </div>
+                  {searchHistory.map((item, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSearchHistoryClick(item)}
+                      className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-center gap-3 group"
+                    >
+                      <Icon name="Clock" size={14} className="text-muted-foreground" />
+                      <span className="flex-1 text-sm">{item}</span>
+                      <Icon name="ArrowUpLeft" size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </header>
