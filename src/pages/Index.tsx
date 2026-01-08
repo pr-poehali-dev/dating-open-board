@@ -232,6 +232,8 @@ const Index = () => {
   const [messageRecipient, setMessageRecipient] = useState<any>(null);
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<{[key: number]: any[]}>({});
+  const [blockedUsers, setBlockedUsers] = useState<number[]>([]);
+  const [showBlockedSection, setShowBlockedSection] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -874,8 +876,38 @@ const Index = () => {
     });
   };
 
+  const handleBlockUser = (listingId: number) => {
+    const listing = listings.find(l => l.id === listingId);
+    if (!listing) return;
+
+    if (blockedUsers.includes(listing.ownerId)) {
+      setBlockedUsers(blockedUsers.filter(id => id !== listing.ownerId));
+      toast({
+        title: 'Разблокировано',
+        description: 'Пользователь разблокирован',
+      });
+    } else {
+      setBlockedUsers([...blockedUsers, listing.ownerId]);
+      setSelectedListing(null);
+      toast({
+        title: 'Заблокировано',
+        description: 'Пользователь добавлен в чёрный список',
+      });
+    }
+  };
+
   const filteredListings = listings
     .filter((listing) => {
+      // Скрываем заблокированных пользователей из основного списка
+      if (!showBlockedSection && blockedUsers.includes(listing.ownerId) && listing.ownerId !== currentUserId) {
+        return false;
+      }
+      
+      // Показываем только заблокированных в секции блокировки
+      if (showBlockedSection && !blockedUsers.includes(listing.ownerId)) {
+        return false;
+      }
+
       const matchesCategory = !selectedCategory || listing.category === selectedCategory;
       const matchesSearch =
         !searchQuery ||
@@ -953,6 +985,29 @@ const Index = () => {
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h1 className="text-xl sm:text-2xl font-bold text-primary">МойДосуг</h1>
             <div className="flex items-center gap-1 sm:gap-2">
+              <Button
+                onClick={() => {
+                  setShowBlockedSection(!showBlockedSection);
+                  setShowFavorites(false);
+                  setShowProfile(false);
+                  setShowFilters(false);
+                  setSelectedCategory(null);
+                }}
+                variant={showBlockedSection ? 'default' : 'outline'}
+                size="sm"
+                className="relative h-8 sm:h-9 px-2 sm:px-3"
+              >
+                <Icon name="Ban" size={14} className="sm:mr-2" />
+                <span className="hidden sm:inline">Чёрный список</span>
+                {blockedUsers.length > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 sm:ml-2 bg-red-500 text-white h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center rounded-full text-[10px] sm:text-xs"
+                  >
+                    {blockedUsers.length}
+                  </Badge>
+                )}
+              </Button>
               <Button
                 onClick={() => setShowFilters(!showFilters)}
                 variant={showFilters ? 'default' : 'outline'}
@@ -1521,7 +1576,9 @@ const Index = () => {
 
         <div className="mb-4 sm:mb-6 flex items-center justify-between">
           <h2 className="text-lg sm:text-xl font-semibold">
-            {showFavorites
+            {showBlockedSection
+              ? 'Чёрный список'
+              : showFavorites
               ? 'Избранное'
               : selectedCategory
               ? categories.find((c) => c.id === selectedCategory)?.name
@@ -1531,6 +1588,16 @@ const Index = () => {
             {filteredListings.length}
           </p>
         </div>
+
+        {showBlockedSection && filteredListings.length === 0 && (
+          <Card className="p-12 text-center">
+            <Icon name="Ban" size={64} className="text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Чёрный список пуст</h3>
+            <p className="text-muted-foreground">
+              Заблокированные пользователи будут отображаться здесь
+            </p>
+          </Card>
+        )}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 animate-fade-in">
           {filteredListings.map((listing) => (
@@ -1563,11 +1630,17 @@ const Index = () => {
               </button>
               
               <div className="h-full flex flex-col justify-between overflow-hidden">
-                <div className={`flex-1 flex items-center justify-center ${
+                <div className={`flex-1 flex items-center justify-center relative ${
                   listing.isVip
                     ? 'bg-gradient-to-br from-yellow-100 to-orange-100'
                     : 'bg-gradient-to-br from-primary/20 to-primary/5'
                 }`}>
+                  {showBlockedSection && blockedUsers.includes(listing.ownerId) && (
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-30">
+                      <Icon name="Ban" size={48} className="text-red-500 mb-2" />
+                      <span className="text-white text-xs font-semibold">Заблокирован</span>
+                    </div>
+                  )}
                   {listing.photos && listing.photos.length > 0 ? (
                     <div className="relative w-full h-full group">
                       <img
@@ -1649,6 +1722,20 @@ const Index = () => {
                     </div>
                   </div>
                   <span className="text-[10px] sm:text-xs font-semibold text-primary block">{listing.price}</span>
+                  {showBlockedSection && blockedUsers.includes(listing.ownerId) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBlockUser(listing.id);
+                      }}
+                    >
+                      <Icon name="UserCheck" size={12} className="mr-1" />
+                      Разблокировать
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -2374,6 +2461,12 @@ const Index = () => {
                     Защищено
                   </Badge>
                 )}
+                {blockedUsers.includes(selectedListing?.ownerId) && (
+                  <Badge className="bg-red-100 text-red-700 border-red-300">
+                    <Icon name="Ban" size={14} className="mr-1" />
+                    Заблокирован
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -2427,17 +2520,28 @@ const Index = () => {
                 {selectedListing?.location}
               </div>
               {selectedListing?.ownerId !== currentUserId && (
-                <Button
-                  onClick={() => {
-                    setMessageRecipient(selectedListing);
-                    setShowMessagesDialog(true);
-                  }}
-                  className="w-full sm:w-auto"
-                  size="sm"
-                >
-                  <Icon name="MessageSquare" size={16} className="mr-2" />
-                  Написать
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button
+                    onClick={() => {
+                      setMessageRecipient(selectedListing);
+                      setShowMessagesDialog(true);
+                    }}
+                    className="flex-1 sm:flex-none"
+                    size="sm"
+                  >
+                    <Icon name="MessageSquare" size={16} className="mr-2" />
+                    Написать
+                  </Button>
+                  <Button
+                    onClick={() => handleBlockUser(selectedListing.id)}
+                    variant={blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
+                    className="flex-1 sm:flex-none"
+                    size="sm"
+                  >
+                    <Icon name="Ban" size={16} className="mr-2" />
+                    {blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
+                  </Button>
+                </div>
               )}
             </div>
 
