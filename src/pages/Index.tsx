@@ -565,6 +565,32 @@ const Index = () => {
       [listingId]: (photoAccessRequests[listingId] || []).filter((id) => id !== userId),
     });
 
+    // Автоматический взаимный обмен: находим объявления пользователя и даём доступ
+    const requesterListings = listings.filter((l) => l.ownerId === userId && l.privatePhotos.length > 0);
+    
+    if (requesterListings.length > 0) {
+      const mutualAccess = { ...grantedAccess };
+      let grantedCount = 0;
+
+      requesterListings.forEach((listing) => {
+        // Проверяем, есть ли уже доступ
+        if (!(mutualAccess[listing.id] || []).includes(currentUserId)) {
+          mutualAccess[listing.id] = [...(mutualAccess[listing.id] || []), currentUserId];
+          grantedCount++;
+        }
+      });
+
+      if (grantedCount > 0) {
+        setGrantedAccess(mutualAccess);
+        
+        toast({
+          title: 'Взаимный обмен!',
+          description: `Доступ предоставлен. Вы получили доступ к ${grantedCount} объявлению(-ям) пользователя`,
+        });
+        return;
+      }
+    }
+
     toast({
       title: 'Доступ предоставлен',
       description: 'Пользователь теперь может видеть ваши приватные фото',
