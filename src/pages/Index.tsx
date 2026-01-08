@@ -2461,7 +2461,7 @@ const Index = () => {
                     Защищено
                   </Badge>
                 )}
-                {blockedUsers.includes(selectedListing?.ownerId) && (
+                {selectedListing?.ownerId && blockedUsers.includes(selectedListing.ownerId) && (
                   <Badge className="bg-red-100 text-red-700 border-red-300">
                     <Icon name="Ban" size={14} className="mr-1" />
                     Заблокирован
@@ -2533,13 +2533,13 @@ const Index = () => {
                     Написать
                   </Button>
                   <Button
-                    onClick={() => handleBlockUser(selectedListing.id)}
-                    variant={blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
+                    onClick={() => selectedListing && handleBlockUser(selectedListing.id)}
+                    variant={selectedListing && blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
                     className="flex-1 sm:flex-none"
                     size="sm"
                   >
                     <Icon name="Ban" size={16} className="mr-2" />
-                    {blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
+                    {selectedListing && blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
                   </Button>
                 </div>
               )}
