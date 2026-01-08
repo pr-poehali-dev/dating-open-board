@@ -56,6 +56,7 @@ const mockListings = [
     price: '5000 ₽/час',
     isVip: false,
     boostedAt: null,
+    ownerId: 1,
   },
   {
     id: 2,
@@ -69,6 +70,7 @@ const mockListings = [
     price: '15000 ₽/час',
     isVip: true,
     boostedAt: Date.now(),
+    ownerId: 1,
   },
   {
     id: 3,
@@ -82,6 +84,7 @@ const mockListings = [
     price: '3000 ₽/сутки',
     isVip: false,
     boostedAt: null,
+    ownerId: 2,
   },
   {
     id: 4,
@@ -95,6 +98,7 @@ const mockListings = [
     price: '25000 ₽',
     isVip: false,
     boostedAt: null,
+    ownerId: 2,
   },
   {
     id: 5,
@@ -108,6 +112,7 @@ const mockListings = [
     price: '8000 ₽/час',
     isVip: false,
     boostedAt: null,
+    ownerId: 2,
   },
   {
     id: 6,
@@ -121,10 +126,14 @@ const mockListings = [
     price: '6000 ₽/час',
     isVip: false,
     boostedAt: null,
+    ownerId: 2,
   },
 ];
 
 const Index = () => {
+  const [currentUserId] = useState(1);
+  const [showProfile, setShowProfile] = useState(false);
+  const [editingListing, setEditingListing] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedListing, setSelectedListing] = useState<any>(null);
@@ -170,6 +179,7 @@ const Index = () => {
       verified: false,
       isVip: false,
       boostedAt: null,
+      ownerId: currentUserId,
     };
 
     setListings([listing, ...listings]);
@@ -187,6 +197,39 @@ const Index = () => {
       description: 'Ваше объявление опубликовано',
     });
   };
+
+  const handleEditListing = () => {
+    if (!editingListing.title || !editingListing.category || !editingListing.location || !editingListing.price) {
+      toast({
+        title: 'Ошибка',
+        description: 'Заполните все обязательные поля',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const updatedListings = listings.map((listing) =>
+      listing.id === editingListing.id ? editingListing : listing
+    );
+
+    setListings(updatedListings);
+    setEditingListing(null);
+
+    toast({
+      title: 'Сохранено!',
+      description: 'Изменения успешно сохранены',
+    });
+  };
+
+  const handleDeleteListing = (listingId: number) => {
+    setListings(listings.filter((listing) => listing.id !== listingId));
+    toast({
+      title: 'Удалено',
+      description: 'Объявление успешно удалено',
+    });
+  };
+
+  const myListings = listings.filter((listing) => listing.ownerId === currentUserId);
 
   const handleAddReview = () => {
     if (!newReview.author || !newReview.comment) {
@@ -335,9 +378,18 @@ const Index = () => {
                 <Icon name="Plus" size={16} className="mr-2" />
                 Разместить
               </Button>
-              <Button variant="outline" size="sm">
+              <Button
+                variant={showProfile ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowProfile(!showProfile)}
+              >
                 <Icon name="User" size={16} className="mr-2" />
-                Войти
+                Кабинет
+                {myListings.length > 0 && (
+                  <Badge variant="secondary" className="ml-2 bg-primary text-white h-5 w-5 p-0 flex items-center justify-center rounded-full">
+                    {myListings.length}
+                  </Badge>
+                )}
               </Button>
             </div>
           </div>
@@ -359,6 +411,137 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {showProfile ? (
+          <div className="animate-fade-in">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Мои объявления</h2>
+              <Button variant="outline" onClick={() => setShowProfile(false)}>
+                <Icon name="ArrowLeft" size={16} className="mr-2" />
+                Назад к доске
+              </Button>
+            </div>
+
+            {myListings.length === 0 ? (
+              <Card className="p-12 text-center">
+                <Icon name="FileText" size={64} className="text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">У вас пока нет объявлений</h3>
+                <p className="text-muted-foreground mb-6">
+                  Создайте первое объявление чтобы начать получать отклики
+                </p>
+                <Button onClick={() => {
+                  setShowProfile(false);
+                  setShowCreateDialog(true);
+                }}>
+                  <Icon name="Plus" size={18} className="mr-2" />
+                  Создать объявление
+                </Button>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {myListings.map((listing) => (
+                  <Card key={listing.id} className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-3">
+                          <h3 className="text-xl font-semibold">{listing.title}</h3>
+                          {listing.isVip && (
+                            <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
+                              <Icon name="Crown" size={12} className="mr-1" />
+                              VIP
+                            </Badge>
+                          )}
+                          {listing.boostedAt && (
+                            <Badge className="bg-blue-500 text-white">
+                              <Icon name="TrendingUp" size={12} className="mr-1" />
+                              ТОП
+                            </Badge>
+                          )}
+                          {listing.verified && (
+                            <Badge className="bg-green-100 text-green-700">
+                              <Icon name="CheckCircle" size={12} className="mr-1" />
+                              Верифицирован
+                            </Badge>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                          <div className="flex items-center gap-1">
+                            <Icon name={getCategoryIcon(listing.category) as any} size={14} />
+                            {categories.find((c) => c.id === listing.category)?.name}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Icon name="MapPin" size={14} />
+                            {listing.location}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Icon name="Star" size={14} className="text-yellow-500 fill-yellow-500" />
+                            {listing.rating} ({listing.reviews})
+                          </div>
+                        </div>
+
+                        <p className="text-muted-foreground mb-3">{listing.description}</p>
+                        <p className="text-lg font-semibold text-primary">{listing.price}</p>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditingListing(listing)}
+                        >
+                          <Icon name="Edit" size={14} className="mr-1" />
+                          Редактировать
+                        </Button>
+                        
+                        {!listing.isVip && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedListing(listing);
+                              setPaymentType('vip');
+                              setShowPaymentDialog(true);
+                            }}
+                          >
+                            <Icon name="Crown" size={14} className="mr-1" />
+                            Сделать VIP
+                          </Button>
+                        )}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedListing(listing);
+                            setPaymentType('boost');
+                            setShowPaymentDialog(true);
+                          }}
+                        >
+                          <Icon name="TrendingUp" size={14} className="mr-1" />
+                          Поднять
+                        </Button>
+                        
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm('Вы уверены что хотите удалить объявление?')) {
+                              handleDeleteListing(listing.id);
+                            }
+                          }}
+                        >
+                          <Icon name="Trash2" size={14} className="mr-1" />
+                          Удалить
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
         <div className="mb-8 animate-fade-in">
           <h2 className="text-xl font-semibold mb-4">Категории</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
@@ -482,6 +665,8 @@ const Index = () => {
             <p className="text-lg text-muted-foreground">Объявления не найдены</p>
           </div>
         )}
+        </>
+        )}
       </main>
 
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -562,6 +747,93 @@ const Index = () => {
               <Button
                 variant="outline"
                 onClick={() => setShowCreateDialog(false)}
+                className="flex-1"
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingListing} onOpenChange={() => setEditingListing(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Редактировать объявление</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div>
+              <Label htmlFor="edit-title">Название объявления *</Label>
+              <Input
+                id="edit-title"
+                placeholder="Например: Анна, 25 лет"
+                value={editingListing?.title || ''}
+                onChange={(e) => setEditingListing({ ...editingListing, title: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-category">Категория *</Label>
+              <Select
+                value={editingListing?.category || ''}
+                onValueChange={(value) => setEditingListing({ ...editingListing, category: value })}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Выберите категорию" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="edit-location">Локация *</Label>
+              <Input
+                id="edit-location"
+                placeholder="Например: Москва, Центр"
+                value={editingListing?.location || ''}
+                onChange={(e) => setEditingListing({ ...editingListing, location: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-description">Описание</Label>
+              <Textarea
+                id="edit-description"
+                placeholder="Расскажите подробнее о вашем предложении"
+                value={editingListing?.description || ''}
+                onChange={(e) => setEditingListing({ ...editingListing, description: e.target.value })}
+                className="mt-1.5 min-h-[100px]"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit-price">Цена *</Label>
+              <Input
+                id="edit-price"
+                placeholder="Например: 5000 ₽/час"
+                value={editingListing?.price || ''}
+                onChange={(e) => setEditingListing({ ...editingListing, price: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleEditListing} className="flex-1">
+                <Icon name="Check" size={18} className="mr-2" />
+                Сохранить изменения
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setEditingListing(null)}
                 className="flex-1"
               >
                 Отмена
