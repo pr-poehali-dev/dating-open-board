@@ -45,13 +45,13 @@ const popularSearches = [
 
 const mockComments: any = {
   1: [
-    { id: 1, author: 'Александр', comment: 'Отличная встреча, всё на высшем уровне!', date: '2 дня назад' },
-    { id: 2, author: 'Дмитрий', comment: 'Очень приятная девушка, рекомендую', date: '5 дней назад' },
-    { id: 3, author: 'Михаил', comment: 'Хорошо, соответствует описанию', date: '1 неделю назад' },
+    { id: 1, author: 'Александр', comment: 'Отличная встреча, всё на высшем уровне!', date: '2 дня назад', userId: 2 },
+    { id: 2, author: 'Дмитрий', comment: 'Очень приятная девушка, рекомендую', date: '5 дней назад', userId: 3 },
+    { id: 3, author: 'Михаил', comment: 'Хорошо, соответствует описанию', date: '1 неделю назад', userId: 4 },
   ],
   2: [
-    { id: 1, author: 'Иван', comment: 'Премиальный сервис, всё идеально', date: '1 день назад' },
-    { id: 2, author: 'Сергей', comment: 'Профессиональный подход, буду обращаться снова', date: '3 дня назад' },
+    { id: 1, author: 'Иван', comment: 'Премиальный сервис, всё идеально', date: '1 день назад', userId: 5 },
+    { id: 2, author: 'Сергей', comment: 'Профессиональный подход, буду обращаться снова', date: '3 дня назад', userId: 6 },
   ],
 };
 
@@ -170,6 +170,7 @@ const Index = () => {
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCommentDialog, setShowCommentDialog] = useState(false);
+  const [editingComment, setEditingComment] = useState<any>(null);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentType, setPaymentType] = useState<'vip' | 'boost' | 'protection' | null>(null);
@@ -395,6 +396,7 @@ const Index = () => {
       id: (comments[listingId]?.length || 0) + 1,
       ...newComment,
       date: 'Только что',
+      userId: currentUserId,
     };
 
     setComments({
@@ -420,6 +422,62 @@ const Index = () => {
     toast({
       title: 'Спасибо!',
       description: 'Ваш комментарий опубликован',
+    });
+  };
+
+  const handleEditComment = () => {
+    if (!editingComment.comment) {
+      toast({
+        title: 'Ошибка',
+        description: 'Комментарий не может быть пустым',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const listingId = selectedListing.id;
+    const updatedComments = {
+      ...comments,
+      [listingId]: comments[listingId].map((c: any) =>
+        c.id === editingComment.id
+          ? { ...c, comment: editingComment.comment, date: 'Изменено только что' }
+          : c
+      ),
+    };
+
+    setComments(updatedComments);
+    setEditingComment(null);
+
+    toast({
+      title: 'Готово!',
+      description: 'Комментарий успешно изменён',
+    });
+  };
+
+  const handleDeleteComment = (listingId: number, commentId: number) => {
+    const updatedComments = {
+      ...comments,
+      [listingId]: comments[listingId].filter((c: any) => c.id !== commentId),
+    };
+
+    setComments(updatedComments);
+
+    const updatedListings = listings.map((listing) => {
+      if (listing.id === listingId) {
+        return {
+          ...listing,
+          commentsCount: updatedComments[listingId]?.length || 0,
+        };
+      }
+      return listing;
+    });
+
+    setListings(updatedListings);
+    setSelectedListing(updatedListings.find((l) => l.id === listingId));
+
+    toast({
+      title: 'Удалено',
+      description: 'Комментарий успешно удалён',
     });
   };
 
@@ -1247,9 +1305,40 @@ const Index = () => {
                 {comments[selectedListing?.id]?.length > 0 ? (
                   comments[selectedListing?.id].map((comment: any) => (
                     <div key={comment.id} className="border-b pb-4 last:border-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">{comment.author}</span>
-                        <span className="text-xs text-muted-foreground">{comment.date}</span>
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">{comment.author}</span>
+                            {comment.userId === currentUserId && (
+                              <Badge variant="secondary" className="text-xs">Вы</Badge>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground">{comment.date}</span>
+                        </div>
+                        {comment.userId === currentUserId && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={() => setEditingComment(comment)}
+                            >
+                              <Icon name="Pencil" size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-destructive hover:text-destructive"
+                              onClick={() => {
+                                if (confirm('Удалить комментарий?')) {
+                                  handleDeleteComment(selectedListing?.id, comment.id);
+                                }
+                              }}
+                            >
+                              <Icon name="Trash2" size={14} />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">{comment.comment}</p>
                     </div>
@@ -1317,6 +1406,41 @@ const Index = () => {
                   setShowCommentDialog(false);
                   setNewComment({ author: '', comment: '' });
                 }}
+                className="flex-1"
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!editingComment} onOpenChange={() => setEditingComment(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Редактировать комментарий</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div>
+              <Label htmlFor="edit-comment">Комментарий *</Label>
+              <Textarea
+                id="edit-comment"
+                placeholder="Поделитесь своим мнением"
+                value={editingComment?.comment || ''}
+                onChange={(e) => setEditingComment({ ...editingComment, comment: e.target.value })}
+                className="mt-1.5 min-h-[120px]"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleEditComment} className="flex-1">
+                <Icon name="Check" size={18} className="mr-2" />
+                Сохранить
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setEditingComment(null)}
                 className="flex-1"
               >
                 Отмена
