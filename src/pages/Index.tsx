@@ -2599,13 +2599,13 @@ const Index = () => {
                     )}
                   </Button>
                   <Button
-                    onClick={() => handleBlockUser(selectedListing.id)}
-                    variant={blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
+                    onClick={() => handleBlockUser(selectedListing?.id)}
+                    variant={blockedUsers.includes(selectedListing?.ownerId) ? 'default' : 'destructive'}
                     className="flex-1 sm:flex-none"
                     size="sm"
                   >
                     <Icon name="Ban" size={16} className="mr-2" />
-                    {blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
+                    {blockedUsers.includes(selectedListing?.ownerId) ? 'Разблокировать' : 'Заблокировать'}
                   </Button>
                 </div>
               )}
