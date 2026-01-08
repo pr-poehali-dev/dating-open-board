@@ -583,76 +583,64 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 animate-fade-in">
           {filteredListings.map((listing) => (
             <Card
               key={listing.id}
-              className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-[1.02] relative"
+              className="overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-[1.02] relative aspect-square"
               onClick={() => setSelectedListing(listing)}
             >
               {listing.isVip && (
-                <Badge className="absolute top-3 left-3 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0">
-                  <Icon name="Crown" size={12} className="mr-1" />
+                <Badge className="absolute top-2 left-2 z-10 bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-0 text-xs px-1.5 py-0.5">
+                  <Icon name="Crown" size={10} className="mr-0.5" />
                   VIP
                 </Badge>
               )}
               {listing.boostedAt && (
-                <Badge className="absolute top-3 left-3 z-10 bg-blue-500 text-white">
-                  <Icon name="TrendingUp" size={12} className="mr-1" />
+                <Badge className="absolute top-2 left-2 z-10 bg-blue-500 text-white text-xs px-1.5 py-0.5">
+                  <Icon name="TrendingUp" size={10} className="mr-0.5" />
                   ТОП
                 </Badge>
               )}
               <button
                 onClick={(e) => toggleFavorite(listing.id, e)}
-                className="absolute top-3 right-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 transition-all hover:scale-110 shadow-md"
+                className="absolute top-2 right-2 z-10 bg-white/90 hover:bg-white rounded-full p-1.5 transition-all hover:scale-110 shadow-md"
               >
                 <Icon
                   name="Heart"
-                  size={20}
+                  size={14}
                   className={favorites.includes(listing.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}
                 />
               </button>
-              <div className={`h-48 bg-gradient-to-br flex items-center justify-center ${
+              
+              <div className={`h-full bg-gradient-to-br flex flex-col justify-between ${
                 listing.isVip
                   ? 'from-yellow-100 to-orange-100'
                   : 'from-primary/20 to-primary/5'
               }`}>
-                <Icon
-                  name={getCategoryIcon(listing.category) as any}
-                  size={64}
-                  className="text-primary/40"
-                />
-              </div>
-
-              <div className="p-5">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-lg">{listing.title}</h3>
-                  {listing.verified && (
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 ml-2">
-                      <Icon name="CheckCircle" size={12} className="mr-1" />
-                      Верифицирован
-                    </Badge>
-                  )}
+                <div className="flex-1 flex items-center justify-center pt-8">
+                  <Icon
+                    name={getCategoryIcon(listing.category) as any}
+                    size={40}
+                    className="text-primary/40"
+                  />
                 </div>
 
-                <div className="flex items-center text-sm text-muted-foreground mb-3">
-                  <Icon name="MapPin" size={14} className="mr-1" />
-                  {listing.location}
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {listing.description}
-                </p>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <Icon name="Star" size={16} className="text-yellow-500 fill-yellow-500" />
-                    <span className="font-medium">{listing.rating}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({listing.reviews})
-                    </span>
+                <div className="p-3 bg-white/95">
+                  <h3 className="font-semibold text-sm mb-1 line-clamp-1">{listing.title}</h3>
+                  
+                  <div className="flex items-center text-xs text-muted-foreground mb-2">
+                    <Icon name="MapPin" size={10} className="mr-0.5" />
+                    <span className="line-clamp-1">{listing.location}</span>
                   </div>
-                  <span className="font-semibold text-primary">{listing.price}</span>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-0.5">
+                      <Icon name="Star" size={12} className="text-yellow-500 fill-yellow-500" />
+                      <span className="text-xs font-medium">{listing.rating}</span>
+                    </div>
+                    <span className="text-xs font-semibold text-primary line-clamp-1">{listing.price}</span>
+                  </div>
                 </div>
               </div>
             </Card>
