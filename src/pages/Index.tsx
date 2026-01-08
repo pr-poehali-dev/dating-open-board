@@ -71,6 +71,7 @@ const mockListings = [
     boostedAt: null,
     ownerId: 1,
     protectionEnabled: false,
+    photos: [],
   },
   {
     id: 2,
@@ -87,6 +88,7 @@ const mockListings = [
     boostedAt: Date.now(),
     ownerId: 1,
     protectionEnabled: false,
+    photos: [],
   },
   {
     id: 3,
@@ -103,6 +105,7 @@ const mockListings = [
     boostedAt: null,
     ownerId: 2,
     protectionEnabled: false,
+    photos: [],
   },
   {
     id: 4,
@@ -119,6 +122,7 @@ const mockListings = [
     boostedAt: null,
     ownerId: 2,
     protectionEnabled: false,
+    photos: [],
   },
   {
     id: 5,
@@ -135,6 +139,7 @@ const mockListings = [
     boostedAt: null,
     ownerId: 2,
     protectionEnabled: false,
+    photos: [],
   },
   {
     id: 6,
@@ -151,6 +156,7 @@ const mockListings = [
     boostedAt: null,
     ownerId: 2,
     protectionEnabled: false,
+    photos: [],
   },
 ];
 
@@ -178,6 +184,7 @@ const Index = () => {
   const [comments, setComments] = useState<any>(mockComments);
   const [favorites, setFavorites] = useState<number[]>([]);
   const [userVotes, setUserVotes] = useState<{[key: number]: 'like' | 'dislike'}>({});
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -243,6 +250,7 @@ const Index = () => {
     location: '',
     description: '',
     price: '',
+    photos: [] as string[],
   });
 
   const [newComment, setNewComment] = useState({
@@ -271,6 +279,7 @@ const Index = () => {
       boostedAt: null,
       ownerId: currentUserId,
       protectionEnabled: false,
+      photos: newListing.photos || [],
     };
 
     setListings([listing, ...listings]);
@@ -281,6 +290,7 @@ const Index = () => {
       location: '',
       description: '',
       price: '',
+      photos: [],
     });
 
     toast({
@@ -500,6 +510,69 @@ const Index = () => {
       });
       
       return newFavorites;
+    });
+  };
+
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>, isEditing: boolean = false) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    const currentPhotos = isEditing ? (editingListing?.photos || []) : newListing.photos;
+    
+    if (currentPhotos.length + files.length > 10) {
+      toast({
+        title: 'Ограничение',
+        description: 'Можно загрузить не более 10 фотографий',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: 'Ошибка',
+          description: 'Можно загружать только изображения',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        if (isEditing) {
+          setEditingListing({
+            ...editingListing,
+            photos: [...(editingListing?.photos || []), base64String],
+          });
+        } else {
+          setNewListing({
+            ...newListing,
+            photos: [...newListing.photos, base64String],
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleDeletePhoto = (index: number, isEditing: boolean = false) => {
+    if (isEditing) {
+      setEditingListing({
+        ...editingListing,
+        photos: editingListing?.photos?.filter((_: string, i: number) => i !== index) || [],
+      });
+    } else {
+      setNewListing({
+        ...newListing,
+        photos: newListing.photos.filter((_, i) => i !== index),
+      });
+    }
+
+    toast({
+      title: 'Удалено',
+      description: 'Фотография удалена',
     });
   };
 
@@ -920,17 +993,33 @@ const Index = () => {
                 />
               </button>
               
-              <div className={`h-full bg-gradient-to-br flex flex-col justify-between ${
-                listing.isVip
-                  ? 'from-yellow-100 to-orange-100'
-                  : 'from-primary/20 to-primary/5'
-              }`}>
-                <div className="flex-1 flex items-center justify-center pt-8">
-                  <Icon
-                    name={getCategoryIcon(listing.category) as any}
-                    size={40}
-                    className="text-primary/40"
-                  />
+              <div className="h-full flex flex-col justify-between overflow-hidden">
+                <div className={`flex-1 flex items-center justify-center ${
+                  listing.isVip
+                    ? 'bg-gradient-to-br from-yellow-100 to-orange-100'
+                    : 'bg-gradient-to-br from-primary/20 to-primary/5'
+                }`}>
+                  {listing.photos && listing.photos.length > 0 ? (
+                    <div className="relative w-full h-full">
+                      <img
+                        src={listing.photos[0]}
+                        alt={listing.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {listing.photos.length > 1 && (
+                        <Badge className="absolute bottom-2 right-2 bg-black/70 text-white border-0 text-xs">
+                          <Icon name="Image" size={10} className="mr-1" />
+                          {listing.photos.length}
+                        </Badge>
+                      )}
+                    </div>
+                  ) : (
+                    <Icon
+                      name={getCategoryIcon(listing.category) as any}
+                      size={40}
+                      className="text-primary/40"
+                    />
+                  )}
                 </div>
 
                 <div className="p-3 bg-white/95">
@@ -1044,6 +1133,61 @@ const Index = () => {
               />
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Фотографии (до 10 штук)</Label>
+                <Badge variant="secondary">
+                  {newListing.photos.length}/10
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                ⚠️ Разрешены только неинтимные фото: лицо, тело, общий вид. Интимный 18+ контент запрещён.
+              </p>
+
+              {newListing.photos.length > 0 && (
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  {newListing.photos.map((photo, index) => (
+                    <div key={index} className="relative aspect-square group">
+                      <img
+                        src={photo}
+                        alt={`Фото ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePhoto(index, false)}
+                        className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Icon name="X" size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {newListing.photos.length < 10 && (
+                <div>
+                  <input
+                    type="file"
+                    id="photo-upload"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handlePhotoUpload(e, false)}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('photo-upload')?.click()}
+                    className="w-full"
+                  >
+                    <Icon name="Upload" size={18} className="mr-2" />
+                    Загрузить фото
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button onClick={handleCreateListing} className="flex-1">
                 <Icon name="Check" size={18} className="mr-2" />
@@ -1131,6 +1275,61 @@ const Index = () => {
               />
             </div>
 
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label>Фотографии (до 10 штук)</Label>
+                <Badge variant="secondary">
+                  {editingListing?.photos?.length || 0}/10
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                ⚠️ Разрешены только неинтимные фото: лицо, тело, общий вид. Интимный 18+ контент запрещён.
+              </p>
+
+              {editingListing?.photos && editingListing.photos.length > 0 && (
+                <div className="grid grid-cols-5 gap-2 mb-3">
+                  {editingListing.photos.map((photo: string, index: number) => (
+                    <div key={index} className="relative aspect-square group">
+                      <img
+                        src={photo}
+                        alt={`Фото ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleDeletePhoto(index, true)}
+                        className="absolute top-1 right-1 bg-destructive text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Icon name="X" size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {(!editingListing?.photos || editingListing.photos.length < 10) && (
+                <div>
+                  <input
+                    type="file"
+                    id="photo-upload-edit"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => handlePhotoUpload(e, true)}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('photo-upload-edit')?.click()}
+                    className="w-full"
+                  >
+                    <Icon name="Upload" size={18} className="mr-2" />
+                    Загрузить фото
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-4">
               <Button onClick={handleEditListing} className="flex-1">
                 <Icon name="Check" size={18} className="mr-2" />
@@ -1148,19 +1347,68 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!selectedListing} onOpenChange={() => setSelectedListing(null)}>
+      <Dialog open={!!selectedListing} onOpenChange={() => {
+        setSelectedListing(null);
+        setCurrentPhotoIndex(0);
+      }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl">{selectedListing?.title}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="h-64 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center">
-              <Icon
-                name={getCategoryIcon(selectedListing?.category) as any}
-                size={96}
-                className="text-primary/40"
-              />
+            <div className="relative h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
+              {selectedListing?.photos && selectedListing.photos.length > 0 ? (
+                <>
+                  <img
+                    src={selectedListing.photos[currentPhotoIndex]}
+                    alt={selectedListing.title}
+                    className="w-full h-full object-cover"
+                  />
+                  {selectedListing.photos.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setCurrentPhotoIndex((prev) => 
+                          prev === 0 ? selectedListing.photos.length - 1 : prev - 1
+                        )}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                      >
+                        <Icon name="ChevronLeft" size={24} />
+                      </button>
+                      <button
+                        onClick={() => setCurrentPhotoIndex((prev) => 
+                          prev === selectedListing.photos.length - 1 ? 0 : prev + 1
+                        )}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                      >
+                        <Icon name="ChevronRight" size={24} />
+                      </button>
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                        {selectedListing.photos.map((_: string, index: number) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentPhotoIndex(index)}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              index === currentPhotoIndex
+                                ? 'bg-white w-6'
+                                : 'bg-white/50 hover:bg-white/75'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <div className="absolute top-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                        {currentPhotoIndex + 1} / {selectedListing.photos.length}
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <Icon
+                  name={getCategoryIcon(selectedListing?.category) as any}
+                  size={96}
+                  className="text-primary/40"
+                />
+              )}
             </div>
 
             <div className="flex items-center justify-between flex-wrap gap-2">
