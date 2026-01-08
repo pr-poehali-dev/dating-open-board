@@ -32,6 +32,17 @@ const categories = [
   { id: 'bdsm', name: 'БДСМ', icon: 'Lock', color: 'bg-red-100 text-red-700' },
 ];
 
+const popularSearches = [
+  'знакомства',
+  'встреча',
+  'девушка',
+  'москва',
+  'центр',
+  'vip',
+  'проверенная',
+  'массаж',
+];
+
 const mockReviews: any = {
   1: [
     { id: 1, author: 'Александр', rating: 5, comment: 'Отличная встреча, всё на высшем уровне!', date: '2 дня назад' },
@@ -179,6 +190,38 @@ const Index = () => {
     setSearchHistory([]);
     localStorage.removeItem('searchHistory');
   };
+
+  const getAutocomplete = () => {
+    if (!searchQuery.trim()) return [];
+    
+    const query = searchQuery.toLowerCase().trim();
+    const suggestions = new Set<string>();
+    
+    categories.forEach(cat => {
+      if (cat.name.toLowerCase().includes(query)) {
+        suggestions.add(cat.name);
+      }
+    });
+    
+    listings.forEach(listing => {
+      if (listing.title.toLowerCase().includes(query)) {
+        suggestions.add(listing.title);
+      }
+      if (listing.location.toLowerCase().includes(query)) {
+        suggestions.add(listing.location);
+      }
+    });
+    
+    popularSearches.forEach(search => {
+      if (search.toLowerCase().includes(query)) {
+        suggestions.add(search);
+      }
+    });
+    
+    return Array.from(suggestions).slice(0, 5);
+  };
+
+  const autocompleteSuggestions = getAutocomplete();
 
   const [newListing, setNewListing] = useState({
     title: '',
@@ -454,33 +497,62 @@ const Index = () => {
               </button>
             )}
             
-            {showSearchHistory && searchHistory.length > 0 && (
+            {showSearchHistory && (
               <>
                 <div 
                   className="fixed inset-0 z-20" 
                   onClick={() => setShowSearchHistory(false)}
                 />
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-30 max-h-64 overflow-y-auto">
-                  <div className="flex items-center justify-between px-4 py-2 border-b bg-muted/30">
-                    <span className="text-sm font-medium text-muted-foreground">История поиска</span>
-                    <button
-                      onClick={clearSearchHistory}
-                      className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      Очистить
-                    </button>
-                  </div>
-                  {searchHistory.map((item, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleSearchHistoryClick(item)}
-                      className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-center gap-3 group"
-                    >
-                      <Icon name="Clock" size={14} className="text-muted-foreground" />
-                      <span className="flex-1 text-sm">{item}</span>
-                      <Icon name="ArrowUpLeft" size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </button>
-                  ))}
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border rounded-lg shadow-lg z-30 max-h-80 overflow-y-auto">
+                  {autocompleteSuggestions.length > 0 && (
+                    <div className="border-b">
+                      <div className="px-4 py-2 bg-muted/30">
+                        <span className="text-sm font-medium text-muted-foreground">Подсказки</span>
+                      </div>
+                      {autocompleteSuggestions.map((suggestion, index) => (
+                        <button
+                          key={`autocomplete-${index}`}
+                          onClick={() => handleSearchHistoryClick(suggestion)}
+                          className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-center gap-3 group"
+                        >
+                          <Icon name="Search" size={14} className="text-primary" />
+                          <span className="flex-1 text-sm">{suggestion}</span>
+                          <Icon name="CornerDownLeft" size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {searchHistory.length > 0 && (
+                    <>
+                      <div className="flex items-center justify-between px-4 py-2 bg-muted/30">
+                        <span className="text-sm font-medium text-muted-foreground">История поиска</span>
+                        <button
+                          onClick={clearSearchHistory}
+                          className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          Очистить
+                        </button>
+                      </div>
+                      {searchHistory.map((item, index) => (
+                        <button
+                          key={`history-${index}`}
+                          onClick={() => handleSearchHistoryClick(item)}
+                          className="w-full px-4 py-2.5 text-left hover:bg-muted/50 transition-colors flex items-center gap-3 group"
+                        >
+                          <Icon name="Clock" size={14} className="text-muted-foreground" />
+                          <span className="flex-1 text-sm">{item}</span>
+                          <Icon name="ArrowUpLeft" size={14} className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </button>
+                      ))}
+                    </>
+                  )}
+                  
+                  {autocompleteSuggestions.length === 0 && searchHistory.length === 0 && (
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      Начните вводить для поиска
+                    </div>
+                  )}
                 </div>
               </>
             )}
