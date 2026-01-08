@@ -600,7 +600,7 @@ const Index = () => {
   };
 
   const handleRequestPhotoAccess = () => {
-    if (!selectedListing || selectedListing.ownerId === currentUserId) return;
+    if (!selectedListing || !selectedListing.ownerId || selectedListing.ownerId === currentUserId) return;
 
     const listingId = selectedListing.id;
     const currentRequests = photoAccessRequests[listingId] || [];
@@ -940,12 +940,12 @@ const Index = () => {
   const filteredListings = listings
     .filter((listing) => {
       // Скрываем заблокированных пользователей из основного списка
-      if (!showBlockedSection && blockedUsers.includes(listing.ownerId) && listing.ownerId !== currentUserId) {
+      if (!showBlockedSection && listing.ownerId && blockedUsers.includes(listing.ownerId) && listing.ownerId !== currentUserId) {
         return false;
       }
       
       // Показываем только заблокированных в секции блокировки
-      if (showBlockedSection && !blockedUsers.includes(listing.ownerId)) {
+      if (showBlockedSection && listing.ownerId && !blockedUsers.includes(listing.ownerId)) {
         return false;
       }
 
@@ -2520,7 +2520,7 @@ const Index = () => {
                     Защищено
                   </Badge>
                 )}
-                {blockedUsers.includes(selectedListing.ownerId) && (
+                {selectedListing.ownerId && blockedUsers.includes(selectedListing.ownerId) && (
                   <Badge className="bg-red-100 text-red-700 border-red-300">
                     <Icon name="Ban" size={14} className="mr-1" />
                     Заблокирован
@@ -2578,7 +2578,7 @@ const Index = () => {
                 <Icon name="MapPin" size={18} className="mr-2" />
                 {selectedListing.location}
               </div>
-              {selectedListing.ownerId !== currentUserId && (
+              {selectedListing.ownerId && selectedListing.ownerId !== currentUserId && (
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                   <Button
                     onClick={() => {
@@ -2601,12 +2601,12 @@ const Index = () => {
                   </Button>
                   <Button
                     onClick={() => handleBlockUser(selectedListing.id)}
-                    variant={blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
+                    variant={selectedListing.ownerId && blockedUsers.includes(selectedListing.ownerId) ? 'default' : 'destructive'}
                     className="flex-1 sm:flex-none"
                     size="sm"
                   >
                     <Icon name="Ban" size={16} className="mr-2" />
-                    {blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
+                    {selectedListing.ownerId && blockedUsers.includes(selectedListing.ownerId) ? 'Разблокировать' : 'Заблокировать'}
                   </Button>
                 </div>
               )}
@@ -2790,7 +2790,7 @@ const Index = () => {
               </div>
             )}
 
-            {selectedListing.ownerId === currentUserId && (
+            {selectedListing.ownerId && selectedListing.ownerId === currentUserId && (
               <div className="flex flex-wrap gap-2 pt-2 border-t">
                 {!selectedListing.isVip && (
                   <Button
