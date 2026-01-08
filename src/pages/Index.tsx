@@ -2637,7 +2637,7 @@ const Index = () => {
             <DialogTitle className="text-2xl">{selectedListing?.title}</DialogTitle>
           </DialogHeader>
 
-          {selectedListing && (
+          {selectedListing && selectedListing.ownerId !== undefined && (
             <div className="space-y-4">
               <div className="relative h-64 sm:h-80 md:h-96 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center overflow-hidden">
                 {selectedListing.photos && selectedListing.photos.length > 0 ? (
