@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import AppInfo from '@/components/AppInfo';
 
 const categories = [
   { id: 'sex', name: 'Секс знакомства', icon: 'Heart', color: 'bg-pink-100 text-pink-700' },
@@ -1023,6 +1024,7 @@ const Index = () => {
           <div className="flex items-center justify-between mb-3 sm:mb-4">
             <h1 className="text-xl sm:text-2xl font-bold text-primary">МойДосуг</h1>
             <div className="flex items-center gap-1 sm:gap-2">
+              <AppInfo />
               <Button
                 onClick={() => {
                   setShowBlockedSection(!showBlockedSection);

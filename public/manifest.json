@@ -1,0 +1,24 @@
+{
+  "name": "МойДосуг",
+  "short_name": "МойДосуг",
+  "description": "Доска объявлений для знакомств",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn.poehali.dev/projects/2f31e985-ce6c-4941-aefe-9282c35fb711/files/cc24b086-d482-4728-a596-1083ea9ba8f7.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
