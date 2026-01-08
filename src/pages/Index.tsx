@@ -4,12 +4,22 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 const categories = [
   { id: 'sex', name: 'Секс знакомства', icon: 'Heart', color: 'bg-pink-100 text-pink-700' },
@@ -94,8 +104,53 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedListing, setSelectedListing] = useState<any>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [listings, setListings] = useState(mockListings);
+  const { toast } = useToast();
 
-  const filteredListings = mockListings.filter((listing) => {
+  const [newListing, setNewListing] = useState({
+    title: '',
+    category: '',
+    location: '',
+    description: '',
+    price: '',
+  });
+
+  const handleCreateListing = () => {
+    if (!newListing.title || !newListing.category || !newListing.location || !newListing.price) {
+      toast({
+        title: 'Ошибка',
+        description: 'Заполните все обязательные поля',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const listing = {
+      id: listings.length + 1,
+      ...newListing,
+      rating: 0,
+      reviews: 0,
+      verified: false,
+    };
+
+    setListings([listing, ...listings]);
+    setShowCreateDialog(false);
+    setNewListing({
+      title: '',
+      category: '',
+      location: '',
+      description: '',
+      price: '',
+    });
+
+    toast({
+      title: 'Успешно!',
+      description: 'Ваше объявление опубликовано',
+    });
+  };
+
+  const filteredListings = listings.filter((listing) => {
     const matchesCategory = !selectedCategory || listing.category === selectedCategory;
     const matchesSearch =
       !searchQuery ||
@@ -114,10 +169,16 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-primary">МойДосуг</h1>
-            <Button variant="outline" size="sm">
-              <Icon name="User" size={16} className="mr-2" />
-              Войти
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setShowCreateDialog(true)} size="sm">
+                <Icon name="Plus" size={16} className="mr-2" />
+                Разместить
+              </Button>
+              <Button variant="outline" size="sm">
+                <Icon name="User" size={16} className="mr-2" />
+                Войти
+              </Button>
+            </div>
           </div>
           
           <div className="relative">
@@ -233,6 +294,93 @@ const Index = () => {
           </div>
         )}
       </main>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Создать объявление</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            <div>
+              <Label htmlFor="title">Название объявления *</Label>
+              <Input
+                id="title"
+                placeholder="Например: Анна, 25 лет"
+                value={newListing.title}
+                onChange={(e) => setNewListing({ ...newListing, title: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="category">Категория *</Label>
+              <Select
+                value={newListing.category}
+                onValueChange={(value) => setNewListing({ ...newListing, category: value })}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Выберите категорию" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="location">Локация *</Label>
+              <Input
+                id="location"
+                placeholder="Например: Москва, Центр"
+                value={newListing.location}
+                onChange={(e) => setNewListing({ ...newListing, location: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Описание</Label>
+              <Textarea
+                id="description"
+                placeholder="Расскажите подробнее о вашем предложении"
+                value={newListing.description}
+                onChange={(e) => setNewListing({ ...newListing, description: e.target.value })}
+                className="mt-1.5 min-h-[100px]"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="price">Цена *</Label>
+              <Input
+                id="price"
+                placeholder="Например: 5000 ₽/час"
+                value={newListing.price}
+                onChange={(e) => setNewListing({ ...newListing, price: e.target.value })}
+                className="mt-1.5"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button onClick={handleCreateListing} className="flex-1">
+                <Icon name="Check" size={18} className="mr-2" />
+                Опубликовать
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateDialog(false)}
+                className="flex-1"
+              >
+                Отмена
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!selectedListing} onOpenChange={() => setSelectedListing(null)}>
         <DialogContent className="max-w-2xl">
